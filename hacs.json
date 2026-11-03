@@ -1,4 +1,6 @@
 {
-  "name": "小电拼Home Assistant",
-  "render_readme": true
+  "name": "小电拼 Home Assistant（中文增强版）",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "mcp_cocan.zip"
 }

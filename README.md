@@ -1,178 +1,84 @@
-# 制糖工厂小电拼的Home Assistant集成<br>CoCan Integration for Home Assistant
+# 小电拼 Home Assistant · 中文增强版
 
-本地适配版 `0.3.6.1`：基于上游 `0.3.6`，补齐 152 个默认实体名称及 5 组控制选项的 HA 原生中英文翻译，并修复新版 HA 打开集成选项时报 `config_entry has no setter` 的问题。已有实体 ID、unique ID、设备绑定及用户自定义名称保留；控制选项的内部值和设备命令参数不变。实体配置 JSON 中的协议字段、原始状态与自定义名称不会自动翻译。此版本尚未发布到上游，安装官方版本会覆盖本地改动。
+[![Build and Release](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml/badge.svg)](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/CodeH-top/HA_mcp_CoCan)](https://github.com/CodeH-top/HA_mcp_CoCan/releases)
 
-[![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/default)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+通过制糖工厂官方 MCP 云服务接入小电拼，支持官方 App 与 Home Assistant 共存，无需切换设备的 MQTT 接入方式，也无需设备与 HA 位于同一局域网。
 
-[English](#english) | [简体中文](#chinese)
+本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.3.6.1** 补齐 152 个默认实体名称与 5 组控制选项的 HA 原生中英文翻译，并修复新版 Home Assistant 打开配置选项时的 500 错误。保留原有 domain、实体 unique ID 和设备绑定，不需要重新添加设备。用户自行设置的实体名称不会被翻译覆盖。
 
----
+## 使用 HACS 安装和更新
 
-<a name="chinese"></a>
-## 💡 核心优势：App 无缝共存 和 无局域网限制
+1. 在 **HACS → 右上角菜单 → 自定义存储库** 添加 `https://github.com/CodeH-top/HA_mcp_CoCan`，类别选择 **集成**。
+2. 搜索 **小电拼 Home Assistant（中文增强版）**，下载最新正式版本，然后重启 HA。
+3. 前往 **设置 → 设备与服务 → 添加集成**，搜索 **小电拼Home Assistant**。
+4. 填写设备专属 MCP 地址，默认使用 **Streamable HTTP**，按需填写认证 Token。
 
-1️⃣ 制糖工厂小电拼 自带 MQTT 接入功能，但启用 MQTT 会导致官方 App 失效。本集成**基于制糖工厂为 AI 智能体开放的 MCP 协议**开发，无需占用 MQTT 协议❗️
+后续更新由 HACS 跟踪本仓库的 GitHub Releases，并下载 GitHub Actions 构建的 `mcp_cocan.zip`。
 
-   | 接入方式 | 官方 App | Home Assistant | 特点 |
-   | :--- | :---: | :---: | :--- |
-   | **MQTT 接入** | ❌/✅ | ✅/❌ | app 与 HA 二选一 |
-   | **MCP (本集成)** | ✅ | ✅ | **双端共存，互不干扰** |
+### 从上游版或手动安装版迁移
 
- <br>2️⃣ mcp 协议传输使用制糖工厂官方服务器， **无需** 小电拼和 Home Assistant 在同一局域网下‼️<br>❇️ **无论小电拼在全球任意位置，联网即可控制** ❇️
+不要删除已经添加的小电拼设备或配置条目。先备份当前 `custom_components/mcp_cocan/`；如果 HACS 已登记上游仓库，先从 HACS 的自定义仓库列表移除该登记，再添加本仓库。下载本仓库版本覆盖同一个集成目录，重启即可保留配置与实体。不要同时让两个仓库管理同一个 `mcp_cocan` 集成，也不要使用 HACS 的卸载操作删除正在使用的集成。
 
----
+## 手动安装
 
-## ⚡ 快速开始
+从 [本仓库 Releases](https://github.com/CodeH-top/HA_mcp_CoCan/releases) 下载 `mcp_cocan.zip` 和 `mcp_cocan.zip.sha256`。校验 SHA256 后，将 ZIP **内容**解压到 `/config/custom_components/mcp_cocan/`，确保该目录下直接存在 `manifest.json`，然后重启 HA。
 
-### 方式一：HACS 安装（推荐）
-1. 导航至 **HACS** -> 右上角菜单 -> **自定义存储库**。
-2. 添加仓库 `https://github.com/Adisonyao/HA_mcp_CoCan`，类别选择 **集成 (Integration)**。
-3. 搜索 **MCP Device** 并安装，随后重启 Home Assistant。
-4. 在 **设置 -> 设备与服务** 中添加集成 **MCP Device**。
+发布 ZIP 根目录直接包含集成文件，适配 HACS `zip_release` 安装；不要再额外套一层 `mcp_cocan` 文件夹。
 
-### 方式二：手动安装
-1. 下载最新 [Release](https://github.com/Adisonyao/HA_mcp_CoCan/releases) 压缩包。
-2. 解压获得 **"mcp_cocan"文件** ，并将文件夹移至你的Home Assistant配置目录 `/config/custom_components/mcp_cocan/`。
-3. 重启 Home Assistant。
-4. 在 **添加集成** 页面搜索 **"小电拼Home Assistant"** 添加集成。
+## 获取与填写连接参数
 
----
+在小电拼 App / 小程序中进入 **设置 → 龙虾服务 → 其他**，找到提供给智能体的文本，从中复制设备专属的完整 MCP 服务器地址。推荐使用以 `/mcp` 结尾的地址，传输类型选择 **Streamable HTTP**。
 
-## ⚙️ 配置参数
+| 参数 | 说明 |
+| --- | --- |
+| MCP Server 地址 | App 提供的完整设备专属地址，不要使用 SKILL.md 地址 |
+| 传输类型 | 推荐 Streamable HTTP；兼容选项 SSE 在当前客户端中也以 HTTP POST 请求实现，并非独立的旧式 SSE 客户端 |
+| 认证 Token | 只有服务端要求时填写，否则留空 |
+| 设备名称 | 自定义显示名称 |
+| 轮询间隔 | 默认 15 秒，允许 5–300 秒 |
 
-| 参数 | 示例 | 说明 |
-| :--- | :--- | :--- |
-| **MCP Server 地址** | `https://mcp.thecandysign.com/xxx/xxx/mcp` | 从小电拼 App 获取的完整 MCP 地址 |
-| **传输类型** | `Streamable HTTP` | 默认传输协议 |
-| **认证 Token** | *（留空）* | 若服务端未开启 Token 认证则留空 |
-| **设备名称** | `小电拼 Pro` | 自定义显示名称 |
-| **轮询间隔** | `15` 秒 | 状态同步频率 (范围: 5–300s) |
+设备专属地址包含访问凭据，请勿提交到仓库、公开 Issue 或分享截图中。配置本 HA 集成无需安装任何本地 AI skill。
 
-### 📖 如何获取 MCP Server 地址？
+## 功能与端口
 
-1. 打开 **小电拼小程序 / App**。
-2. 进入 **设置** -> **龙虾服务**-> **下拉菜单改成"其他"**。
-3. 复制页面中的完整 Prompt 文本（格式如下）：
-   > “现在安装控制「AI小电拼 Mirror」的技能：阅读'https://mcp.thecandysign.com/1340********3233/SKILL.md'。这台小电拼的名字是「小电拼 3233」。MCP 服务器的地址是'**https://mcp.thecandysign.com/1340********3233/********/mcp**'。”
-4. 从中提取出 `'` 单引号包裹的 **MCP 服务器地址**（即以 `https://.../mcp` 结尾的部分），复制填入 Home Assistant 集成配置项中。
+支持 5 端口小电拼 CP-02 / CP-02S，总功率预算 160W。Port A 为 USB-A（端口索引 1，最高 60W）；C1–C4 为 USB-C（索引 2–5，最高 140W，受整机总功率限制）。
 
----
+- 端口充电开关、分配功率上限、输出功率/电压/电流、温度状态与累计电量。
+- 充电策略、温控模式、屏幕亮度；CP-02S 另支持屏显模式、待机动画和整点报时。
+- PD 协商、连接设备、线缆与电池信息，以及设备型号、固件和 Wi-Fi 诊断信息。
+- 152 个默认实体名称和控制选项随 HA 语言显示中文或英文；协议原始状态、自定义名称及实体配置 JSON 中的字段不进行强制翻译。
 
-## 🔌 硬件与端口映射
+### 为什么没有整机开关机？
 
-支持 **制糖工厂 小电拼 (CP-02S/CP-02)**（160W 总功率）
+官方 MCP 接口没有整机开机、关机或重启方法，只提供 `turn_on_port` / `turn_off_port` 控制充电输出。这两个方法接受端口数组，因此协议可一次操作全部 5 个端口，但当前集成仅提供逐端口开关实体。关闭全部端口不等于整机断电，设备的 Wi-Fi 与控制服务仍会运行。
 
-| HA 显示名称 | MCP 索引 | 物理接口 | 接口最大功率 |
-| :--- | :---: | :---: | :---: |
-| **Port A** | port 1 | USB-A | 60W |
-| **Port C1 ~ C4** | port 2 ~ 5 | USB-C | 140W |
+### 当前限制
 
----
+- 充电策略没有读取接口，初始状态可能为 `unknown`，外部 App 更改后无法自动同步。
+- 未连接端口的 PD、线缆和电池字段显示未知属于正常情况。
+- 上游仍有部分诊断字段类型或单位解析问题，例如 PD 状态温度、序列号/BSSID 格式、总分配功率；本次汉化未修复这些数据问题，不应将这些字段用于关键自动化。
+- CP-02 不支持 CP-02S 专属屏幕功能；默认配置仍可能生成相应实体，可在实体设置中禁用。
+- 总功率分配不得超过 160W；各端口滑块提交的是完整 5 端口数组。
+- 当前通过云端轮询，依赖设备联网与厂商服务器，不提供本地离线控制。
 
-## 📊 实体支持 (共 152 个实体)
+## 开发、构建和发布
 
-本集成提供极其丰富的设备监控与控制能力，实体分为**控制类实体**与**状态类实体**：
+源码位于 `custom_components/mcp_cocan/`。本地可运行：
 
-<details>
-<summary>👉 点击展开：单端口实体列表 (5 端口 × 24 个)</summary>
-<ul>
-
-
-   #### 🎛️ 控制类实体 (Per Port)
-   * **端口充电开关** (`switch`)：开启/关闭指定端口充电
-   * **功率分配上限** (`number`)：各端口最大输出功率滑块 (Port A: 0-60W, Port C1-C4: 0-140W)
-
-   #### 📈 状态类实体 (Per Port)
-   * **基础监控**：实时功率 (W)、输出电压 (V)、输出电流 (A)、端口温度、设备接入状态、快充协议 (PD/非快充)
-   * **链路与物理状态**：工作电压/电流、PD 温度、PDO ID、USB 最高速度、双角色电源、电池检测与电量 (%)、PD 协商功率、输入端电压
-   * **PD 与线缆信息**：PD 连接设备名称/品牌、连接线缆名称/品牌/最大支持电压/E-Marker 芯片/主动线缆标识
-   * **数据统计**：会话累计电量 (mWh)
-</ul>
-</details>
-
-<details>
-<summary>👉 点击展开：设备级实体列表 (7 个)</summary>
-<ul>
-
-#### 🎛️ 控制类实体 (Device Level)
-* **充电策略** (`select`)：切换充电模式 (FAST自由流 / SLOW均衡 / 小家电 / 高性能 / 单口极速)
-* **温度模式** (`select`)：性能优先 / 温控优先
-* **屏幕控制** (`select`)：显示亮度 (关/低/中/高)、屏显模式 (待机动画优先/功率优先)、待机动画选择 (流星/落花/康威生命游戏/时间)
-* **系统功能** (`switch`)：整点报时开关
-
-#### 📈 状态类实体 (Device Level)
-* **设备与硬件信息**：产品型号 (`CP-02S`/`CP-02`)、最大功率预算 (`160W`)、固件版本 (FPGA + App 双版本)、设备序列号 (PSN)
-* **网络传感器**：WiFi SSID / BSSID / Channel / Protocol / RSSI 信号强度 (dBm)
-* **总揽传感器**：5 端口总实时功率 (W)、5 端口总分配功率 (W)
-</ul>
-</details>
-
----
-
-## 🛠️ 项目结构与数据流
-
-<details>
-<summary>👉 点击展开：代码架构与安全设计</summary>
-<ul>
-
-```
-custom_components/mcp_cocan/
-├── __init__.py          # 集成入口与平台注册
-├── config_flow.py       # UI 配置与连接测试流程
-├── coordinator.py       # 数据协调器 (轮询 MCP & 状态缓存)
-├── mcp_client.py        # 原生 JSON-RPC over HTTP 客户端 (零第三方依赖)
-├── entity.py            # 实体基类与字段解析
-├── default_config.py    # 152 个默认实体的配置模板
-└── sensor.py / switch.py / select.py / number.py  # 各平台实现
+```sh
+python3 scripts/build_release.py --check
 ```
 
-#### 安全设计 (Security Guidelines)
-- **SSRF 防御**：严格限制 HTTP/HTTPS 协议，拒绝 Loopback 与 Link-Local 地址。
-- **资源限制**：限制单次响应大小 (1MB) 与 JSON 路径嵌套深度 (Max 20)，防止拒绝服务攻击。
-- **输入校验**：使用工具白名单，限制 Select 选项枚举，强类型转换数值传感器。
-</ul>
-</details>
+GitHub Actions 在 main 提交、Pull Request 和手动触发时校验 Python/JSON、实体身份重复与翻译覆盖，并生成可下载的构建附件。发布新版本时：
 
----
+1. 修改 `custom_components/mcp_cocan/manifest.json` 的版本号，并更新说明。
+2. 提交并推送 main。
+3. 创建并推送对应的 `v<版本号>` 标签，例如 `v0.3.6.1`。
+4. Actions 检查标签与 manifest 版本一致，构建 ZIP 和 SHA256，自动发布到 GitHub Releases；HACS 从正式 Release 获取更新。
 
-## ❓ 常见问题 (FAQ)
+汉化通过 HA 的 `translation_key` 与 `translations/en.json`、`zh.json`、`zh-Hans.json` 实现，保持实体 ID 和下拉选项内部值不变。配置选项兼容修复移除了对新版 HA 只读 `OptionsFlow.config_entry` 的手动赋值。
 
-**Q: 为什么充电策略设置后在 HA 中不更新？**
-> **A:** 受限于 MCP 协议，服务器未公开策略读取 API，仅支持写入。通过外部修改策略后 HA 无法主动获取最新状态。
+## 致谢与许可
 
-**Q: 部分 PD 传感器显示 `unknown`？**
-> **A:** `get_port_pd_status` 仅返回当前有设备连接的活跃端口。空闲端口显示 `unknown` 属于正常现象。
-
-**Q: 调整功率分配滑块后没有生效？**
-> **A:** 接口要求 5 个端口同步发送且**总和不得超过 160W**。若超出限制，请求会被拒绝并自动弹回原值。
-
-
-
----
-
-## 📄 License
-
-本项目基于 [GNU General Public License v3.0](LICENSE) 开源。*本集成属于第三方开源插件，与 CANDYSIGN（制糖工厂）官方无关。*
-
----
----
-
-<a name="english"></a>
-## English Quick Overview
-
-### Core Advantage: App Coexistence
-This integration leverages the **MCP Protocol** open for AI agents. Unlike MQTT, it allows the **Official App and Home Assistant to run simultaneously** without conflict.
-
-### Installation & Configuration
-1. Install via **HACS** (Custom Repository) or manually copy to `/config/custom_components/mcp_cocan/`.
-2. Retrieve your MCP Server URL (`https://.../mcp`) from the official App under **Settings -> Lobster Service**.
-3. Add **MCP Device** in HA Integration settings and enter the MCP Server URL.
-
-### Features
-* **Full Hardware Support**: Port A (60W) + Port C1-C4 (140W), max 160W total budget.
-* **152 Entities (Control & State)**: Separated into control entities (switches, sliders, screen/strategy select) and state sensors (power, voltage, PD protocols, cable details, WiFi status).
-* **Zero External Dependencies**: Pure Python JSON-RPC HTTP client implementation with builtin SSRF and Memory security guards.
-
-### License
-Distributed under the **GPL-3.0 License**. See [LICENSE](LICENSE) for details.
+原作者：[Adisonyao](https://github.com/Adisonyao)，原始项目：[HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan)。本维护分支保留原作者署名，并按 [GNU GPL v3](LICENSE) 继续发布。厂商 MCP 协议与服务由制糖工厂提供；本项目为第三方开源集成，与厂商无隶属关系。
