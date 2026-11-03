@@ -77,7 +77,7 @@ GitHub Actions 在 main 提交、Pull Request 和手动触发时校验 Python/JS
 3. 创建并推送对应的 `v<版本号>` 标签，例如 `v0.3.6.1`。
 4. Actions 检查标签与 manifest 版本一致，构建 ZIP 和 SHA256，自动发布到 GitHub Releases；HACS 从正式 Release 获取更新。
 
-汉化通过 HA 的 `translation_key` 与 `translations/en.json`、`zh.json`、`zh-Hans.json` 实现，保持实体 ID 和下拉选项内部值不变。配置选项兼容修复移除了对新版 HA 只读 `OptionsFlow.config_entry` 的手动赋值。
+汉化通过 HA 的 `translation_key` 与 `translations/en.json`、`zh.json`、`zh-Hans.json` 实现，保持实体 ID 与设备命令参数不变。下拉实体状态使用规范的英文键（如亮度 `low`、待机动画 `clock`），HA 界面按语言显示中文；服务调用同时接受新版状态键和旧版标签。依赖旧状态字符串的自动化条件需相应调整。配置选项兼容修复移除了对新版 HA 只读 `OptionsFlow.config_entry` 的手动赋值。
 
 ## 致谢与许可
 
