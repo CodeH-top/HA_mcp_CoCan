@@ -27,7 +27,8 @@ def main() -> None:
         ast.parse(source.read_text(), filename=str(source))
     for source in integration.rglob('*.json'):
         json.loads(source.read_text())
-    entities = runpy.run_path(str(integration / 'default_config.py'))['DEFAULT_ENTITIES_CONFIG']
+    defaults = runpy.run_path(str(integration / 'default_config.py'))
+    entities = defaults['DEFAULT_ENTITIES_CONFIG']
     identities = [(item['type'], item['unique_id']) for item in entities]
     if len(identities) != len(set(identities)):
         raise ValueError('默认实体身份重复')
@@ -38,7 +39,7 @@ def main() -> None:
             if not translated['name']:
                 raise ValueError(f'{language} 存在空实体名')
             if entity['type'] == 'select':
-                if set(translated['state']) != set(entity['option_labels']):
+                if set(translated['state']) != set(defaults['SELECT_OPTION_KEYS'][entity['unique_id']]):
                     raise ValueError(f'{language} 控制选项翻译不完整')
     print(f"校验通过：v{manifest['version']}，{len(entities)} 个实体，3 份完整翻译")
     if args.check:

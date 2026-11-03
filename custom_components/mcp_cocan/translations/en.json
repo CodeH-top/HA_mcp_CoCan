@@ -476,43 +476,43 @@
       "charging_strategy": {
         "name": "Charging Strategy",
         "state": {
-          "FAST / 自由流": "FAST / 自由流",
-          "SLOW / 均衡": "SLOW / 均衡",
-          "USBA Charging / 小家电": "USBA Charging / 小家电",
-          "HIGH PERFORMANCE / 高性能": "HIGH PERFORMANCE / 高性能",
-          "ULTRA FAST SINGLE PORT / 单口极速": "ULTRA FAST SINGLE PORT / 单口极速"
+          "fast": "FAST / 自由流",
+          "slow": "SLOW / 均衡",
+          "usba_charging": "USBA Charging / 小家电",
+          "high_performance": "HIGH PERFORMANCE / 高性能",
+          "ultra_fast_single_port": "ULTRA FAST SINGLE PORT / 单口极速"
         }
       },
       "temperature_mode": {
         "name": "Temperature Mode",
         "state": {
-          "POWER_PRIORITY / 性能优先": "POWER_PRIORITY / 性能优先",
-          "TEMPERATURE_PRIORITY / 温控优先": "TEMPERATURE_PRIORITY / 温控优先"
+          "power_priority": "POWER_PRIORITY / 性能优先",
+          "temperature_priority": "TEMPERATURE_PRIORITY / 温控优先"
         }
       },
       "display_brightness": {
         "name": "Display Brightness",
         "state": {
-          "Off": "Off",
-          "Low": "Low",
-          "Medium": "Medium",
-          "High": "High"
+          "off": "Off",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
         }
       },
       "display_mode": {
         "name": "Display Mode",
         "state": {
-          "Animation Priority": "Animation Priority",
-          "Power Display Priority": "Power Display Priority"
+          "animation_priority": "Animation Priority",
+          "power_display_priority": "Power Display Priority"
         }
       },
       "idle_display": {
         "name": "Idle Display",
         "state": {
-          "Meteor": "Meteor",
-          "Falling Petals": "Falling Petals",
-          "Conway's Game of Life": "Conway's Game of Life",
-          "Clock": "Clock"
+          "meteor": "Meteor",
+          "falling_petals": "Falling Petals",
+          "conways_game_of_life": "Conway's Game of Life",
+          "clock": "Clock"
         }
       }
     },

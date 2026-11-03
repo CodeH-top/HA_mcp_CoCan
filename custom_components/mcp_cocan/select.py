@@ -24,9 +24,15 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_ENTITIES, DOMAIN
 from .coordinator import McpDeviceCoordinator
+from .default_config import DEFAULT_ENTITIES_CONFIG, SELECT_OPTION_KEYS
 from .entity import McpDeviceEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+DEFAULT_SELECT_LABELS = {
+    item['unique_id']: item['option_labels']
+    for item in DEFAULT_ENTITIES_CONFIG if item['type'] == 'select'
+}
 
 
 async def async_setup_entry(
@@ -60,6 +66,10 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
             self._attr_options = [str(label) for label in option_labels]
         else:
             self._attr_options = [str(opt) for opt in config.get("options", [])]
+        self._legacy_options = self._attr_options
+        keys = SELECT_OPTION_KEYS.get(self._attr_unique_id)
+        if keys and option_labels == DEFAULT_SELECT_LABELS[self._attr_unique_id]:
+            self._attr_options = list(keys)
 
     @property
     def current_option(self) -> str | None:
@@ -101,8 +111,8 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
         for i, opt in enumerate(options):
             if str(opt) == str(raw):
                 if option_labels and i < len(option_labels):
-                    return str(option_labels[i])
-                return str(opt)
+                    return self._attr_options[i]
+                return self._attr_options[i]
 
         # Unknown value — do NOT return raw value (security)
         _LOGGER.warning(
@@ -117,6 +127,10 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
         arg_name = self._config.get("set_arg_name", "value")
         options = self._config.get("options", [])
         option_labels = self._config.get("option_labels")
+
+        # Accept both stable HA state keys and legacy service-call labels.
+        if option in self._attr_options:
+            option = self._legacy_options[self._attr_options.index(option)]
 
         # Find the raw value for the selected label
         raw_value: Any = None

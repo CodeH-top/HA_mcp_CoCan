@@ -1724,3 +1724,12 @@ DEFAULT_ENTITIES_CONFIG: list[dict] = [
         "entity_category": "diagnostic",
     },
 ]
+
+# Stable HA state keys; device API values and legacy labels stay compatible.
+SELECT_OPTION_KEYS = {
+    'charging_strategy': ['fast', 'slow', 'usba_charging', 'high_performance', 'ultra_fast_single_port'],
+    'temperature_mode': ['power_priority', 'temperature_priority'],
+    'display_brightness': ['off', 'low', 'medium', 'high'],
+    'display_mode': ['animation_priority', 'power_display_priority'],
+    'idle_display': ['meteor', 'falling_petals', 'conways_game_of_life', 'clock'],
+}

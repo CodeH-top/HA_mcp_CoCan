@@ -476,43 +476,43 @@
       "charging_strategy": {
         "name": "充电策略",
         "state": {
-          "FAST / 自由流": "自由流",
-          "SLOW / 均衡": "均衡",
-          "USBA Charging / 小家电": "小家电",
-          "HIGH PERFORMANCE / 高性能": "高性能",
-          "ULTRA FAST SINGLE PORT / 单口极速": "单口极速"
+          "fast": "自由流",
+          "slow": "均衡",
+          "usba_charging": "小家电",
+          "high_performance": "高性能",
+          "ultra_fast_single_port": "单口极速"
         }
       },
       "temperature_mode": {
         "name": "温控模式",
         "state": {
-          "POWER_PRIORITY / 性能优先": "性能优先",
-          "TEMPERATURE_PRIORITY / 温控优先": "温控优先"
+          "power_priority": "性能优先",
+          "temperature_priority": "温控优先"
         }
       },
       "display_brightness": {
         "name": "屏幕亮度",
         "state": {
-          "Off": "关",
-          "Low": "低",
-          "Medium": "中",
-          "High": "高"
+          "off": "关",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
         }
       },
       "display_mode": {
         "name": "屏显模式",
         "state": {
-          "Animation Priority": "待机动画优先",
-          "Power Display Priority": "功率显示优先"
+          "animation_priority": "待机动画优先",
+          "power_display_priority": "功率显示优先"
         }
       },
       "idle_display": {
         "name": "待机动画",
         "state": {
-          "Meteor": "流星",
-          "Falling Petals": "落花",
-          "Conway's Game of Life": "康威生命游戏",
-          "Clock": "时钟"
+          "meteor": "流星",
+          "falling_petals": "落花",
+          "conways_game_of_life": "康威生命游戏",
+          "clock": "时钟"
         }
       }
     },
