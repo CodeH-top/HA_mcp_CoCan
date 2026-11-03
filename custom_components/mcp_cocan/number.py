@@ -93,7 +93,7 @@ class McpConfigNumber(McpDeviceEntity, NumberEntity):
         except (ValueError, TypeError):
             _LOGGER.warning(
                 "Number %s: received non-numeric value %r from MCP server",
-                self._attr_name, value,
+                self.name, value,
             )
             return None
 
@@ -103,7 +103,7 @@ class McpConfigNumber(McpDeviceEntity, NumberEntity):
         arg_name = self._config.get("set_arg_name", "value")
 
         if not tool:
-            _LOGGER.warning("Number %s has no set_tool", self._attr_name)
+            _LOGGER.warning("Number %s has no set_tool", self.name)
             return
 
         # Convert to int if step is integer
@@ -112,7 +112,7 @@ class McpConfigNumber(McpDeviceEntity, NumberEntity):
 
         _LOGGER.info(
             "Setting %s to %s (%s=%s)",
-            self._attr_name,
+            self.name,
             value,
             arg_name,
             value,
@@ -120,7 +120,7 @@ class McpConfigNumber(McpDeviceEntity, NumberEntity):
         try:
             await self.coordinator.async_call_tool(tool, {arg_name: value})
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to set %s: %s", self._attr_name, exc)
+            _LOGGER.error("Failed to set %s: %s", self.name, exc)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -166,7 +166,7 @@ class McpPowerAllocationNumber(McpDeviceEntity, NumberEntity):
             _LOGGER.warning(
                 "Power allocation for %s rejected (total would exceed 160W or "
                 "MCP server refused)",
-                self._attr_name,
+                self.name,
             )
             # Don't raise — HA UI will show the slider snapping back
             # because native_value still reads the old cached value.

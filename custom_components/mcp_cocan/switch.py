@@ -76,26 +76,26 @@ class McpConfigSwitch(McpDeviceEntity, SwitchEntity):
         tool = self._config.get("on_tool")
         args = self._config.get("on_args", {})
         if not tool:
-            _LOGGER.warning("Switch %s has no on_tool", self._attr_name)
+            _LOGGER.warning("Switch %s has no on_tool", self.name)
             return
-        _LOGGER.info("Turning on %s: %s(%s)", self._attr_name, tool, args)
+        _LOGGER.info("Turning on %s: %s(%s)", self.name, tool, args)
         try:
             await self.coordinator.async_call_tool(tool, args)
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to turn on %s: %s", self._attr_name, exc)
+            _LOGGER.error("Failed to turn on %s: %s", self.name, exc)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off via MCP tool."""
         tool = self._config.get("off_tool")
         args = self._config.get("off_args", {})
         if not tool:
-            _LOGGER.warning("Switch %s has no off_tool", self._attr_name)
+            _LOGGER.warning("Switch %s has no off_tool", self.name)
             return
-        _LOGGER.info("Turning off %s: %s(%s)", self._attr_name, tool, args)
+        _LOGGER.info("Turning off %s: %s(%s)", self.name, tool, args)
         try:
             await self.coordinator.async_call_tool(tool, args)
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to turn off %s: %s", self._attr_name, exc)
+            _LOGGER.error("Failed to turn off %s: %s", self.name, exc)
 
     @callback
     def _handle_coordinator_update(self) -> None:

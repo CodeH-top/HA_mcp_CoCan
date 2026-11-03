@@ -1,5 +1,7 @@
 # 制糖工厂小电拼的Home Assistant集成<br>CoCan Integration for Home Assistant
 
+本地适配版 `0.3.6.1`：基于上游 `0.3.6`，补齐 152 个默认实体名称及 5 组控制选项的 HA 原生中英文翻译，并修复新版 HA 打开集成选项时报 `config_entry has no setter` 的问题。已有实体 ID、unique ID、设备绑定及用户自定义名称保留；控制选项的内部值和设备命令参数不变。实体配置 JSON 中的协议字段、原始状态与自定义名称不会自动翻译。此版本尚未发布到上游，安装官方版本会覆盖本地改动。
+
 [![HACS Badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/default)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 

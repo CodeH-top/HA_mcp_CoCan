@@ -40,5 +40,498 @@
       "invalid_json": "Invalid JSON format. Please check the syntax.",
       "validation_error": "Configuration validation failed. Please check the errors above."
     }
+  },
+  "entity": {
+    "sensor": {
+      "total_power": {
+        "name": "Total Power"
+      },
+      "port_1_power": {
+        "name": "Port A Power"
+      },
+      "port_1_voltage": {
+        "name": "Port A Voltage"
+      },
+      "port_1_current": {
+        "name": "Port A Current"
+      },
+      "port_1_temp": {
+        "name": "Port A Temperature"
+      },
+      "port_1_connected": {
+        "name": "Port A Connected"
+      },
+      "port_1_protocol": {
+        "name": "Port A Fast Charge Protocol"
+      },
+      "port_1_session_mwh": {
+        "name": "Port A Session Charge"
+      },
+      "port_2_power": {
+        "name": "Port C1 Power"
+      },
+      "port_2_voltage": {
+        "name": "Port C1 Voltage"
+      },
+      "port_2_current": {
+        "name": "Port C1 Current"
+      },
+      "port_2_temp": {
+        "name": "Port C1 Temperature"
+      },
+      "port_2_connected": {
+        "name": "Port C1 Connected"
+      },
+      "port_2_protocol": {
+        "name": "Port C1 Fast Charge Protocol"
+      },
+      "port_2_session_mwh": {
+        "name": "Port C1 Session Charge"
+      },
+      "port_3_power": {
+        "name": "Port C2 Power"
+      },
+      "port_3_voltage": {
+        "name": "Port C2 Voltage"
+      },
+      "port_3_current": {
+        "name": "Port C2 Current"
+      },
+      "port_3_temp": {
+        "name": "Port C2 Temperature"
+      },
+      "port_3_connected": {
+        "name": "Port C2 Connected"
+      },
+      "port_3_protocol": {
+        "name": "Port C2 Fast Charge Protocol"
+      },
+      "port_3_session_mwh": {
+        "name": "Port C2 Session Charge"
+      },
+      "port_4_power": {
+        "name": "Port C3 Power"
+      },
+      "port_4_voltage": {
+        "name": "Port C3 Voltage"
+      },
+      "port_4_current": {
+        "name": "Port C3 Current"
+      },
+      "port_4_temp": {
+        "name": "Port C3 Temperature"
+      },
+      "port_4_connected": {
+        "name": "Port C3 Connected"
+      },
+      "port_4_protocol": {
+        "name": "Port C3 Fast Charge Protocol"
+      },
+      "port_4_session_mwh": {
+        "name": "Port C3 Session Charge"
+      },
+      "port_5_power": {
+        "name": "Port C4 Power"
+      },
+      "port_5_voltage": {
+        "name": "Port C4 Voltage"
+      },
+      "port_5_current": {
+        "name": "Port C4 Current"
+      },
+      "port_5_temp": {
+        "name": "Port C4 Temperature"
+      },
+      "port_5_connected": {
+        "name": "Port C4 Connected"
+      },
+      "port_5_protocol": {
+        "name": "Port C4 Fast Charge Protocol"
+      },
+      "port_5_session_mwh": {
+        "name": "Port C4 Session Charge"
+      },
+      "port_1_vin": {
+        "name": "Port A Input Voltage"
+      },
+      "port_2_vin": {
+        "name": "Port C1 Input Voltage"
+      },
+      "port_3_vin": {
+        "name": "Port C2 Input Voltage"
+      },
+      "port_4_vin": {
+        "name": "Port C3 Input Voltage"
+      },
+      "port_5_vin": {
+        "name": "Port C4 Input Voltage"
+      },
+      "product_family": {
+        "name": "Product Model"
+      },
+      "max_power_budget": {
+        "name": "Max Power Budget"
+      },
+      "device_psn": {
+        "name": "Device PSN"
+      },
+      "firmware_version": {
+        "name": "Firmware Version"
+      },
+      "wifi_ssid": {
+        "name": "WiFi SSID"
+      },
+      "wifi_bssid": {
+        "name": "WiFi BSSID"
+      },
+      "wifi_channel": {
+        "name": "WiFi Channel"
+      },
+      "wifi_protocol": {
+        "name": "WiFi Protocol"
+      },
+      "wifi_rssi": {
+        "name": "WiFi Signal"
+      },
+      "port_1_pd_device": {
+        "name": "Port A Connected Device"
+      },
+      "port_2_pd_device": {
+        "name": "Port C1 Connected Device"
+      },
+      "port_3_pd_device": {
+        "name": "Port C2 Connected Device"
+      },
+      "port_4_pd_device": {
+        "name": "Port C3 Connected Device"
+      },
+      "port_5_pd_device": {
+        "name": "Port C4 Connected Device"
+      },
+      "port_1_pd_brand": {
+        "name": "Port A Device Brand"
+      },
+      "port_2_pd_brand": {
+        "name": "Port C1 Device Brand"
+      },
+      "port_3_pd_brand": {
+        "name": "Port C2 Device Brand"
+      },
+      "port_4_pd_brand": {
+        "name": "Port C3 Device Brand"
+      },
+      "port_5_pd_brand": {
+        "name": "Port C4 Device Brand"
+      },
+      "port_1_pd_cable": {
+        "name": "Port A Cable"
+      },
+      "port_2_pd_cable": {
+        "name": "Port C1 Cable"
+      },
+      "port_3_pd_cable": {
+        "name": "Port C2 Cable"
+      },
+      "port_4_pd_cable": {
+        "name": "Port C3 Cable"
+      },
+      "port_5_pd_cable": {
+        "name": "Port C4 Cable"
+      },
+      "port_1_pd_cable_brand": {
+        "name": "Port A Cable Brand"
+      },
+      "port_2_pd_cable_brand": {
+        "name": "Port C1 Cable Brand"
+      },
+      "port_3_pd_cable_brand": {
+        "name": "Port C2 Cable Brand"
+      },
+      "port_4_pd_cable_brand": {
+        "name": "Port C3 Cable Brand"
+      },
+      "port_5_pd_cable_brand": {
+        "name": "Port C4 Cable Brand"
+      },
+      "port_1_pd_cable_v": {
+        "name": "Port A Cable Max Voltage"
+      },
+      "port_2_pd_cable_v": {
+        "name": "Port C1 Cable Max Voltage"
+      },
+      "port_3_pd_cable_v": {
+        "name": "Port C2 Cable Max Voltage"
+      },
+      "port_4_pd_cable_v": {
+        "name": "Port C3 Cable Max Voltage"
+      },
+      "port_5_pd_cable_v": {
+        "name": "Port C4 Cable Max Voltage"
+      },
+      "port_1_pd_emarker": {
+        "name": "Port A E-Marker"
+      },
+      "port_2_pd_emarker": {
+        "name": "Port C1 E-Marker"
+      },
+      "port_3_pd_emarker": {
+        "name": "Port C2 E-Marker"
+      },
+      "port_4_pd_emarker": {
+        "name": "Port C3 E-Marker"
+      },
+      "port_5_pd_emarker": {
+        "name": "Port C4 E-Marker"
+      },
+      "port_1_pd_rev": {
+        "name": "Port A PD Revision"
+      },
+      "port_2_pd_rev": {
+        "name": "Port C1 PD Revision"
+      },
+      "port_3_pd_rev": {
+        "name": "Port C2 PD Revision"
+      },
+      "port_4_pd_rev": {
+        "name": "Port C3 PD Revision"
+      },
+      "port_5_pd_rev": {
+        "name": "Port C4 PD Revision"
+      },
+      "port_1_pd_op_v": {
+        "name": "Port A Operating Voltage"
+      },
+      "port_2_pd_op_v": {
+        "name": "Port C1 Operating Voltage"
+      },
+      "port_3_pd_op_v": {
+        "name": "Port C2 Operating Voltage"
+      },
+      "port_4_pd_op_v": {
+        "name": "Port C3 Operating Voltage"
+      },
+      "port_5_pd_op_v": {
+        "name": "Port C4 Operating Voltage"
+      },
+      "port_1_pd_op_a": {
+        "name": "Port A Operating Current"
+      },
+      "port_2_pd_op_a": {
+        "name": "Port C1 Operating Current"
+      },
+      "port_3_pd_op_a": {
+        "name": "Port C2 Operating Current"
+      },
+      "port_4_pd_op_a": {
+        "name": "Port C3 Operating Current"
+      },
+      "port_5_pd_op_a": {
+        "name": "Port C4 Operating Current"
+      },
+      "port_1_pd_temp": {
+        "name": "Port A PD Status Temperature"
+      },
+      "port_2_pd_temp": {
+        "name": "Port C1 PD Status Temperature"
+      },
+      "port_3_pd_temp": {
+        "name": "Port C2 PD Status Temperature"
+      },
+      "port_4_pd_temp": {
+        "name": "Port C3 PD Status Temperature"
+      },
+      "port_5_pd_temp": {
+        "name": "Port C4 PD Status Temperature"
+      },
+      "port_1_pd_pdo": {
+        "name": "Port A Request PDO"
+      },
+      "port_2_pd_pdo": {
+        "name": "Port C1 Request PDO"
+      },
+      "port_3_pd_pdo": {
+        "name": "Port C2 Request PDO"
+      },
+      "port_4_pd_pdo": {
+        "name": "Port C3 Request PDO"
+      },
+      "port_5_pd_pdo": {
+        "name": "Port C4 Request PDO"
+      },
+      "port_1_pd_cable_active": {
+        "name": "Port A Active Cable"
+      },
+      "port_2_pd_cable_active": {
+        "name": "Port C1 Active Cable"
+      },
+      "port_3_pd_cable_active": {
+        "name": "Port C2 Active Cable"
+      },
+      "port_4_pd_cable_active": {
+        "name": "Port C3 Active Cable"
+      },
+      "port_5_pd_cable_active": {
+        "name": "Port C4 Active Cable"
+      },
+      "port_1_pd_usb_speed": {
+        "name": "Port A Cable USB Speed"
+      },
+      "port_2_pd_usb_speed": {
+        "name": "Port C1 Cable USB Speed"
+      },
+      "port_3_pd_usb_speed": {
+        "name": "Port C2 Cable USB Speed"
+      },
+      "port_4_pd_usb_speed": {
+        "name": "Port C3 Cable USB Speed"
+      },
+      "port_5_pd_usb_speed": {
+        "name": "Port C4 Cable USB Speed"
+      },
+      "port_1_pd_dual_role": {
+        "name": "Port A Dual Role Power"
+      },
+      "port_2_pd_dual_role": {
+        "name": "Port C1 Dual Role Power"
+      },
+      "port_3_pd_dual_role": {
+        "name": "Port C2 Dual Role Power"
+      },
+      "port_4_pd_dual_role": {
+        "name": "Port C3 Dual Role Power"
+      },
+      "port_5_pd_dual_role": {
+        "name": "Port C4 Dual Role Power"
+      },
+      "total_allocated_power": {
+        "name": "Total Allocated Power"
+      },
+      "port_1_pd_power": {
+        "name": "Port A PD Power"
+      },
+      "port_2_pd_power": {
+        "name": "Port C1 PD Power"
+      },
+      "port_3_pd_power": {
+        "name": "Port C2 PD Power"
+      },
+      "port_4_pd_power": {
+        "name": "Port C3 PD Power"
+      },
+      "port_5_pd_power": {
+        "name": "Port C4 PD Power"
+      },
+      "port_1_pd_battery_pct": {
+        "name": "Port A Battery Level"
+      },
+      "port_2_pd_battery_pct": {
+        "name": "Port C1 Battery Level"
+      },
+      "port_3_pd_battery_pct": {
+        "name": "Port C2 Battery Level"
+      },
+      "port_4_pd_battery_pct": {
+        "name": "Port C3 Battery Level"
+      },
+      "port_5_pd_battery_pct": {
+        "name": "Port C4 Battery Level"
+      },
+      "port_1_pd_battery": {
+        "name": "Port A Battery Present"
+      },
+      "port_2_pd_battery": {
+        "name": "Port C1 Battery Present"
+      },
+      "port_3_pd_battery": {
+        "name": "Port C2 Battery Present"
+      },
+      "port_4_pd_battery": {
+        "name": "Port C3 Battery Present"
+      },
+      "port_5_pd_battery": {
+        "name": "Port C4 Battery Present"
+      }
+    },
+    "switch": {
+      "port_1_charging": {
+        "name": "Port A Charging"
+      },
+      "port_2_charging": {
+        "name": "Port C1 Charging"
+      },
+      "port_3_charging": {
+        "name": "Port C2 Charging"
+      },
+      "port_4_charging": {
+        "name": "Port C3 Charging"
+      },
+      "port_5_charging": {
+        "name": "Port C4 Charging"
+      },
+      "hourly_chime": {
+        "name": "Hourly Chime"
+      }
+    },
+    "select": {
+      "charging_strategy": {
+        "name": "Charging Strategy",
+        "state": {
+          "FAST / 自由流": "FAST / 自由流",
+          "SLOW / 均衡": "SLOW / 均衡",
+          "USBA Charging / 小家电": "USBA Charging / 小家电",
+          "HIGH PERFORMANCE / 高性能": "HIGH PERFORMANCE / 高性能",
+          "ULTRA FAST SINGLE PORT / 单口极速": "ULTRA FAST SINGLE PORT / 单口极速"
+        }
+      },
+      "temperature_mode": {
+        "name": "Temperature Mode",
+        "state": {
+          "POWER_PRIORITY / 性能优先": "POWER_PRIORITY / 性能优先",
+          "TEMPERATURE_PRIORITY / 温控优先": "TEMPERATURE_PRIORITY / 温控优先"
+        }
+      },
+      "display_brightness": {
+        "name": "Display Brightness",
+        "state": {
+          "Off": "Off",
+          "Low": "Low",
+          "Medium": "Medium",
+          "High": "High"
+        }
+      },
+      "display_mode": {
+        "name": "Display Mode",
+        "state": {
+          "Animation Priority": "Animation Priority",
+          "Power Display Priority": "Power Display Priority"
+        }
+      },
+      "idle_display": {
+        "name": "Idle Display",
+        "state": {
+          "Meteor": "Meteor",
+          "Falling Petals": "Falling Petals",
+          "Conway's Game of Life": "Conway's Game of Life",
+          "Clock": "Clock"
+        }
+      }
+    },
+    "number": {
+      "port_1_power_alloc": {
+        "name": "Port A Power Allocation"
+      },
+      "port_2_power_alloc": {
+        "name": "Port C1 Power Allocation"
+      },
+      "port_3_power_alloc": {
+        "name": "Port C2 Power Allocation"
+      },
+      "port_4_power_alloc": {
+        "name": "Port C3 Power Allocation"
+      },
+      "port_5_power_alloc": {
+        "name": "Port C4 Power Allocation"
+      }
+    }
   }
 }

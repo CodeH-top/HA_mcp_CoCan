@@ -16,6 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import McpDeviceCoordinator
+from .default_config import DEFAULT_ENTITIES_CONFIG
 from .utils import convert_value, resolve_path
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +26,11 @@ _LOGGER = logging.getLogger(__name__)
 # device registry or entity state, which could cause memory exhaustion
 # or UI rendering issues.
 MAX_STRING_LEN = 255
+
+DEFAULT_ENTITY_NAMES = {
+    (item["type"], item["unique_id"]): item["name"]
+    for item in DEFAULT_ENTITIES_CONFIG
+}
 
 
 def _sanitise_string(value: Any) -> str:
@@ -69,15 +75,24 @@ class McpDeviceEntity(CoordinatorEntity):
         self._config = config
 
         # Entity identity
-        self._attr_name = config.get("name", "MCP Entity")
-        self._attr_unique_id = config.get("unique_id", self._attr_name)
+        name = config.get("name", "MCP Entity")
+        self._attr_unique_id = config.get("unique_id", name)
+        default_name = DEFAULT_ENTITY_NAMES.get(
+            (config.get("type"), self._attr_unique_id)
+        )
+        if default_name is not None:
+            self._attr_translation_key = self._attr_unique_id
+        # Explicit names override HA's translated names. Keep user-defined names,
+        # but let the built-in entities use the native translation resources.
+        if default_name is None or name != default_name:
+            self._attr_name = name
         self._attr_icon = config.get("icon")
         ec = config.get("entity_category")
         if ec:
             try:
                 self._attr_entity_category = EntityCategory(ec)
             except ValueError:
-                _LOGGER.warning("Invalid entity_category '%s' for %s", ec, self._attr_name)
+                _LOGGER.warning("Invalid entity_category '%s' for %s", ec, name)
 
         # Device info — all values from MCP server are sanitised to
         # prevent injection of control chars or oversized strings.

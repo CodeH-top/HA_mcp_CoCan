@@ -109,7 +109,7 @@ class McpConfigSensor(McpDeviceEntity, SensorEntity):
             if not isinstance(value, (int, float)):
                 _LOGGER.warning(
                     "Sensor %s: expected numeric value for device_class=%s, got %s",
-                    self._attr_name, dc, type(value).__name__,
+                    self.name, dc, type(value).__name__,
                 )
                 return None
 

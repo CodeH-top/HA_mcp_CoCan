@@ -107,7 +107,7 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
         # Unknown value — do NOT return raw value (security)
         _LOGGER.warning(
             "Select %s: received unknown value %r, ignoring",
-            self._attr_name, raw,
+            self.name, raw,
         )
         return None
 
@@ -138,7 +138,7 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
 
         _LOGGER.info(
             "Setting %s to %s (raw: %s)",
-            self._attr_name,
+            self.name,
             option,
             raw_value,
         )
@@ -154,7 +154,7 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
                 except (ValueError, TypeError):
                     pass
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to set %s: %s", self._attr_name, exc)
+            _LOGGER.error("Failed to set %s: %s", self.name, exc)
 
     @callback
     def _handle_coordinator_update(self) -> None:

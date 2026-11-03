@@ -40,5 +40,498 @@
       "invalid_json": "JSON 格式错误，请检查语法。",
       "validation_error": "配置验证失败，请检查上方的错误信息。"
     }
+  },
+  "entity": {
+    "sensor": {
+      "total_power": {
+        "name": "总输出功率"
+      },
+      "port_1_power": {
+        "name": "A 口输出功率"
+      },
+      "port_1_voltage": {
+        "name": "A 口输出电压"
+      },
+      "port_1_current": {
+        "name": "A 口输出电流"
+      },
+      "port_1_temp": {
+        "name": "A 口温度状态"
+      },
+      "port_1_connected": {
+        "name": "A 口连接状态"
+      },
+      "port_1_protocol": {
+        "name": "A 口快充协议"
+      },
+      "port_1_session_mwh": {
+        "name": "A 口本次累计电量"
+      },
+      "port_2_power": {
+        "name": "C1 口输出功率"
+      },
+      "port_2_voltage": {
+        "name": "C1 口输出电压"
+      },
+      "port_2_current": {
+        "name": "C1 口输出电流"
+      },
+      "port_2_temp": {
+        "name": "C1 口温度状态"
+      },
+      "port_2_connected": {
+        "name": "C1 口连接状态"
+      },
+      "port_2_protocol": {
+        "name": "C1 口快充协议"
+      },
+      "port_2_session_mwh": {
+        "name": "C1 口本次累计电量"
+      },
+      "port_3_power": {
+        "name": "C2 口输出功率"
+      },
+      "port_3_voltage": {
+        "name": "C2 口输出电压"
+      },
+      "port_3_current": {
+        "name": "C2 口输出电流"
+      },
+      "port_3_temp": {
+        "name": "C2 口温度状态"
+      },
+      "port_3_connected": {
+        "name": "C2 口连接状态"
+      },
+      "port_3_protocol": {
+        "name": "C2 口快充协议"
+      },
+      "port_3_session_mwh": {
+        "name": "C2 口本次累计电量"
+      },
+      "port_4_power": {
+        "name": "C3 口输出功率"
+      },
+      "port_4_voltage": {
+        "name": "C3 口输出电压"
+      },
+      "port_4_current": {
+        "name": "C3 口输出电流"
+      },
+      "port_4_temp": {
+        "name": "C3 口温度状态"
+      },
+      "port_4_connected": {
+        "name": "C3 口连接状态"
+      },
+      "port_4_protocol": {
+        "name": "C3 口快充协议"
+      },
+      "port_4_session_mwh": {
+        "name": "C3 口本次累计电量"
+      },
+      "port_5_power": {
+        "name": "C4 口输出功率"
+      },
+      "port_5_voltage": {
+        "name": "C4 口输出电压"
+      },
+      "port_5_current": {
+        "name": "C4 口输出电流"
+      },
+      "port_5_temp": {
+        "name": "C4 口温度状态"
+      },
+      "port_5_connected": {
+        "name": "C4 口连接状态"
+      },
+      "port_5_protocol": {
+        "name": "C4 口快充协议"
+      },
+      "port_5_session_mwh": {
+        "name": "C4 口本次累计电量"
+      },
+      "port_1_vin": {
+        "name": "A 口输入电压"
+      },
+      "port_2_vin": {
+        "name": "C1 口输入电压"
+      },
+      "port_3_vin": {
+        "name": "C2 口输入电压"
+      },
+      "port_4_vin": {
+        "name": "C3 口输入电压"
+      },
+      "port_5_vin": {
+        "name": "C4 口输入电压"
+      },
+      "product_family": {
+        "name": "产品型号"
+      },
+      "max_power_budget": {
+        "name": "最大总功率"
+      },
+      "device_psn": {
+        "name": "设备序列号"
+      },
+      "firmware_version": {
+        "name": "固件版本"
+      },
+      "wifi_ssid": {
+        "name": "Wi-Fi 名称"
+      },
+      "wifi_bssid": {
+        "name": "Wi-Fi 接入点地址"
+      },
+      "wifi_channel": {
+        "name": "Wi-Fi 信道"
+      },
+      "wifi_protocol": {
+        "name": "Wi-Fi 协议"
+      },
+      "wifi_rssi": {
+        "name": "Wi-Fi 信号强度"
+      },
+      "port_1_pd_device": {
+        "name": "A 口连接设备"
+      },
+      "port_2_pd_device": {
+        "name": "C1 口连接设备"
+      },
+      "port_3_pd_device": {
+        "name": "C2 口连接设备"
+      },
+      "port_4_pd_device": {
+        "name": "C3 口连接设备"
+      },
+      "port_5_pd_device": {
+        "name": "C4 口连接设备"
+      },
+      "port_1_pd_brand": {
+        "name": "A 口设备品牌"
+      },
+      "port_2_pd_brand": {
+        "name": "C1 口设备品牌"
+      },
+      "port_3_pd_brand": {
+        "name": "C2 口设备品牌"
+      },
+      "port_4_pd_brand": {
+        "name": "C3 口设备品牌"
+      },
+      "port_5_pd_brand": {
+        "name": "C4 口设备品牌"
+      },
+      "port_1_pd_cable": {
+        "name": "A 口线缆名称"
+      },
+      "port_2_pd_cable": {
+        "name": "C1 口线缆名称"
+      },
+      "port_3_pd_cable": {
+        "name": "C2 口线缆名称"
+      },
+      "port_4_pd_cable": {
+        "name": "C3 口线缆名称"
+      },
+      "port_5_pd_cable": {
+        "name": "C4 口线缆名称"
+      },
+      "port_1_pd_cable_brand": {
+        "name": "A 口线缆品牌"
+      },
+      "port_2_pd_cable_brand": {
+        "name": "C1 口线缆品牌"
+      },
+      "port_3_pd_cable_brand": {
+        "name": "C2 口线缆品牌"
+      },
+      "port_4_pd_cable_brand": {
+        "name": "C3 口线缆品牌"
+      },
+      "port_5_pd_cable_brand": {
+        "name": "C4 口线缆品牌"
+      },
+      "port_1_pd_cable_v": {
+        "name": "A 口线缆最高电压"
+      },
+      "port_2_pd_cable_v": {
+        "name": "C1 口线缆最高电压"
+      },
+      "port_3_pd_cable_v": {
+        "name": "C2 口线缆最高电压"
+      },
+      "port_4_pd_cable_v": {
+        "name": "C3 口线缆最高电压"
+      },
+      "port_5_pd_cable_v": {
+        "name": "C4 口线缆最高电压"
+      },
+      "port_1_pd_emarker": {
+        "name": "A 口E-Marker 芯片"
+      },
+      "port_2_pd_emarker": {
+        "name": "C1 口E-Marker 芯片"
+      },
+      "port_3_pd_emarker": {
+        "name": "C2 口E-Marker 芯片"
+      },
+      "port_4_pd_emarker": {
+        "name": "C3 口E-Marker 芯片"
+      },
+      "port_5_pd_emarker": {
+        "name": "C4 口E-Marker 芯片"
+      },
+      "port_1_pd_rev": {
+        "name": "A 口PD 协议版本"
+      },
+      "port_2_pd_rev": {
+        "name": "C1 口PD 协议版本"
+      },
+      "port_3_pd_rev": {
+        "name": "C2 口PD 协议版本"
+      },
+      "port_4_pd_rev": {
+        "name": "C3 口PD 协议版本"
+      },
+      "port_5_pd_rev": {
+        "name": "C4 口PD 协议版本"
+      },
+      "port_1_pd_op_v": {
+        "name": "A 口PD 工作电压"
+      },
+      "port_2_pd_op_v": {
+        "name": "C1 口PD 工作电压"
+      },
+      "port_3_pd_op_v": {
+        "name": "C2 口PD 工作电压"
+      },
+      "port_4_pd_op_v": {
+        "name": "C3 口PD 工作电压"
+      },
+      "port_5_pd_op_v": {
+        "name": "C4 口PD 工作电压"
+      },
+      "port_1_pd_op_a": {
+        "name": "A 口PD 工作电流"
+      },
+      "port_2_pd_op_a": {
+        "name": "C1 口PD 工作电流"
+      },
+      "port_3_pd_op_a": {
+        "name": "C2 口PD 工作电流"
+      },
+      "port_4_pd_op_a": {
+        "name": "C3 口PD 工作电流"
+      },
+      "port_5_pd_op_a": {
+        "name": "C4 口PD 工作电流"
+      },
+      "port_1_pd_temp": {
+        "name": "A 口PD 状态温度"
+      },
+      "port_2_pd_temp": {
+        "name": "C1 口PD 状态温度"
+      },
+      "port_3_pd_temp": {
+        "name": "C2 口PD 状态温度"
+      },
+      "port_4_pd_temp": {
+        "name": "C3 口PD 状态温度"
+      },
+      "port_5_pd_temp": {
+        "name": "C4 口PD 状态温度"
+      },
+      "port_1_pd_pdo": {
+        "name": "A 口请求 PDO 编号"
+      },
+      "port_2_pd_pdo": {
+        "name": "C1 口请求 PDO 编号"
+      },
+      "port_3_pd_pdo": {
+        "name": "C2 口请求 PDO 编号"
+      },
+      "port_4_pd_pdo": {
+        "name": "C3 口请求 PDO 编号"
+      },
+      "port_5_pd_pdo": {
+        "name": "C4 口请求 PDO 编号"
+      },
+      "port_1_pd_cable_active": {
+        "name": "A 口有源线缆"
+      },
+      "port_2_pd_cable_active": {
+        "name": "C1 口有源线缆"
+      },
+      "port_3_pd_cable_active": {
+        "name": "C2 口有源线缆"
+      },
+      "port_4_pd_cable_active": {
+        "name": "C3 口有源线缆"
+      },
+      "port_5_pd_cable_active": {
+        "name": "C4 口有源线缆"
+      },
+      "port_1_pd_usb_speed": {
+        "name": "A 口线缆 USB 速率"
+      },
+      "port_2_pd_usb_speed": {
+        "name": "C1 口线缆 USB 速率"
+      },
+      "port_3_pd_usb_speed": {
+        "name": "C2 口线缆 USB 速率"
+      },
+      "port_4_pd_usb_speed": {
+        "name": "C3 口线缆 USB 速率"
+      },
+      "port_5_pd_usb_speed": {
+        "name": "C4 口线缆 USB 速率"
+      },
+      "port_1_pd_dual_role": {
+        "name": "A 口双角色供电"
+      },
+      "port_2_pd_dual_role": {
+        "name": "C1 口双角色供电"
+      },
+      "port_3_pd_dual_role": {
+        "name": "C2 口双角色供电"
+      },
+      "port_4_pd_dual_role": {
+        "name": "C3 口双角色供电"
+      },
+      "port_5_pd_dual_role": {
+        "name": "C4 口双角色供电"
+      },
+      "total_allocated_power": {
+        "name": "总分配功率"
+      },
+      "port_1_pd_power": {
+        "name": "A 口PD 协商功率"
+      },
+      "port_2_pd_power": {
+        "name": "C1 口PD 协商功率"
+      },
+      "port_3_pd_power": {
+        "name": "C2 口PD 协商功率"
+      },
+      "port_4_pd_power": {
+        "name": "C3 口PD 协商功率"
+      },
+      "port_5_pd_power": {
+        "name": "C4 口PD 协商功率"
+      },
+      "port_1_pd_battery_pct": {
+        "name": "A 口电池电量"
+      },
+      "port_2_pd_battery_pct": {
+        "name": "C1 口电池电量"
+      },
+      "port_3_pd_battery_pct": {
+        "name": "C2 口电池电量"
+      },
+      "port_4_pd_battery_pct": {
+        "name": "C3 口电池电量"
+      },
+      "port_5_pd_battery_pct": {
+        "name": "C4 口电池电量"
+      },
+      "port_1_pd_battery": {
+        "name": "A 口电池检测"
+      },
+      "port_2_pd_battery": {
+        "name": "C1 口电池检测"
+      },
+      "port_3_pd_battery": {
+        "name": "C2 口电池检测"
+      },
+      "port_4_pd_battery": {
+        "name": "C3 口电池检测"
+      },
+      "port_5_pd_battery": {
+        "name": "C4 口电池检测"
+      }
+    },
+    "switch": {
+      "port_1_charging": {
+        "name": "A 口充电开关"
+      },
+      "port_2_charging": {
+        "name": "C1 口充电开关"
+      },
+      "port_3_charging": {
+        "name": "C2 口充电开关"
+      },
+      "port_4_charging": {
+        "name": "C3 口充电开关"
+      },
+      "port_5_charging": {
+        "name": "C4 口充电开关"
+      },
+      "hourly_chime": {
+        "name": "整点报时"
+      }
+    },
+    "select": {
+      "charging_strategy": {
+        "name": "充电策略",
+        "state": {
+          "FAST / 自由流": "自由流",
+          "SLOW / 均衡": "均衡",
+          "USBA Charging / 小家电": "小家电",
+          "HIGH PERFORMANCE / 高性能": "高性能",
+          "ULTRA FAST SINGLE PORT / 单口极速": "单口极速"
+        }
+      },
+      "temperature_mode": {
+        "name": "温控模式",
+        "state": {
+          "POWER_PRIORITY / 性能优先": "性能优先",
+          "TEMPERATURE_PRIORITY / 温控优先": "温控优先"
+        }
+      },
+      "display_brightness": {
+        "name": "屏幕亮度",
+        "state": {
+          "Off": "关",
+          "Low": "低",
+          "Medium": "中",
+          "High": "高"
+        }
+      },
+      "display_mode": {
+        "name": "屏显模式",
+        "state": {
+          "Animation Priority": "待机动画优先",
+          "Power Display Priority": "功率显示优先"
+        }
+      },
+      "idle_display": {
+        "name": "待机动画",
+        "state": {
+          "Meteor": "流星",
+          "Falling Petals": "落花",
+          "Conway's Game of Life": "康威生命游戏",
+          "Clock": "时钟"
+        }
+      }
+    },
+    "number": {
+      "port_1_power_alloc": {
+        "name": "A 口分配功率上限"
+      },
+      "port_2_power_alloc": {
+        "name": "C1 口分配功率上限"
+      },
+      "port_3_power_alloc": {
+        "name": "C2 口分配功率上限"
+      },
+      "port_4_power_alloc": {
+        "name": "C3 口分配功率上限"
+      },
+      "port_5_power_alloc": {
+        "name": "C4 口分配功率上限"
+      }
+    }
   }
 }
