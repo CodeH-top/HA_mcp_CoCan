@@ -1,4 +1,4 @@
-"""Verified LAN reads and explicitly requested official Broker restoration."""
+"""Verified LAN reads and Broker writes gated by the flow's confirmation."""
 from __future__ import annotations
 
 import ipaddress
@@ -6,7 +6,6 @@ import json
 import math
 import re
 import socket
-from urllib.parse import urlsplit
 
 import aiohttp
 
@@ -69,11 +68,15 @@ class LocalClient:
         """Read identity and broker only for an explicit connection switch."""
         return await self._read(True)
 
-    async def restore_official_broker(self) -> dict:
+    async def restore_official_broker(self, expected_broker=None) -> dict:
         """Clear the custom Broker and rebuild MQTT only on explicit restoration."""
-        return await self._read(True, restore_official=True)
+        return await self._read(True, target_broker='', expected_broker=expected_broker)
 
-    async def _read(self, profile_only: bool, restore_official: bool = False) -> dict:
+    async def set_custom_broker(self, uri: str, expected_broker: str) -> dict:
+        """Write HA's authenticated URI only after the flow's confirmation."""
+        return await self._read(True, target_broker=uri, expected_broker=expected_broker)
+
+    async def _read(self, profile_only: bool, target_broker=None, expected_broker=None) -> dict:
         # Resolve once per snapshot and pin both HTTP requests to this address.
         records = await self.hass.async_add_executor_job(socket.getaddrinfo, self.host, 80, socket.AF_INET, socket.SOCK_STREAM)
         addresses = [item[4][0] for item in records]
@@ -105,28 +108,30 @@ class LocalClient:
                 config, _ = json.JSONDecoder().raw_decode(html[config_marker.end():].lstrip())
                 if not isinstance(config, dict) or not isinstance(config.get('broker'), str):
                     raise ValueError('Device broker config is invalid')
-                if restore_official:
-                    from .broker import OFFICIAL_BROKER_URL
-                    official = urlsplit(OFFICIAL_BROKER_URL)
-                    active = urlsplit(config['broker'])
-                    if (active.scheme, active.hostname, active.port) != (official.scheme, official.hostname, official.port):
+                if target_broker is not None:
+                    from .broker import OFFICIAL_BROKER_URL, public_broker_uri
+                    active = public_broker_uri(config['broker'])
+                    if expected_broker is not None and active != expected_broker:
+                        raise ValueError('Device Broker changed since confirmation')
+                    target = public_broker_uri(target_broker or OFFICIAL_BROKER_URL)
+                    needs_change = config['broker'] != target_broker if target_broker else active != target
+                    if needs_change:
                         endpoints_marker = re.search(r'window\.__ENDPOINTS\s*=\s*', html)
                         if endpoints_marker is None:
-                            raise ValueError('Device does not advertise Broker restoration')
+                            raise ValueError('Device does not advertise Broker switching')
                         endpoints, _ = json.JSONDecoder().raw_decode(html[endpoints_marker.end():].lstrip())
                         if not isinstance(endpoints, list) or not all(path in endpoints for path in ('/setbrokerz', '/destroymqttz', '/startmqttz')):
-                            raise ValueError('Device does not support Broker restoration')
-                        # Empty body removes only the custom override. The protected
-                        # factory Broker and its device certificates stay untouched.
-                        await fetch('/setbrokerz', method='POST', data='', headers={'Content-Type': 'text/plain'})
+                            raise ValueError('Device does not support Broker switching')
+                        # Empty body restores the protected factory Broker; a
+                        # custom URI never overwrites the factory certificates.
+                        await fetch('/setbrokerz', method='POST', data=target_broker, headers={'Content-Type': 'text/plain'})
                         try:
                             await fetch('/destroymqttz')
                         finally:
                             await fetch('/startmqttz')
                         profile = await self.read_profile()
-                        restored = urlsplit(profile['broker'])
-                        if (restored.scheme, restored.hostname, restored.port) != (official.scheme, official.hostname, official.port):
-                            raise ValueError('Device did not restore the official Broker')
+                        if public_broker_uri(profile['broker']) != target:
+                            raise ValueError('Device did not select the requested Broker')
                         return profile
                 return {'psn': str(psn), 'broker': config['broker']}
             return normalise_metrics(json.loads(await fetch('/metrics.json')))

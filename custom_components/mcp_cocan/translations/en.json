@@ -67,14 +67,31 @@
         "menu_options": {
           "settings": "Current connection settings",
           "connection": "MQTT Broker",
-          "official_connection": "Restore official Broker"
+          "quick_switch": "Quick switch Broker"
         }
       },
       "connection": {
         "title": "MQTT Broker",
+        "menu_options": {
+          "official_broker": "Official",
+          "custom_broker": "Custom"
+        }
+      },
+      "custom_broker": {
+        "title": "Custom MQTT Broker",
         "data": {
           "broker_url": "Broker address"
         }
+      },
+      "broker_confirm": {
+        "title": "Confirm Broker switch",
+        "description": "Current: {from_broker} ({from_mode})\n\nTarget: {to_broker} ({to_mode})\n\nConfirm to switch both the device and Home Assistant.",
+        "data": {
+          "confirm": "Confirm this switch"
+        }
+      },
+      "quick_switch": {
+        "title": "Quick switch Broker"
       }
     },
     "error": {
@@ -86,9 +103,12 @@
       "identity_unavailable": "No verified device PSN; cannot switch this entry.",
       "broker_detection_failed": "Invalid broker address or it does not match HA MQTT. Configure the same broker in HA MQTT first.",
       "official_mcp_required": "Configure the official MCP URL in connection settings first.",
-      "cannot_connect": "Cannot connect to the selected service. Check the device Broker; use Restore official Broker to switch the device back to the official service.",
-      "official_switch_failed": "Could not restore the device Broker. Check its LAN address and connection, then retry; the HA connection settings were not saved.",
-      "official_connect_pending": "The device has restored its official Broker, but the official MCP service is not ready. Wait briefly and retry; the HA connection settings were not saved."
+      "cannot_connect": "Cannot connect to the selected service. Check its Broker address and authentication.",
+      "confirmation_required": "Confirm the displayed source and target before switching.",
+      "device_broker_unavailable": "Cannot read the current device Broker. Check its LAN address and connection in Current connection settings.",
+      "broker_source_changed": "The device Broker changed. Review the updated source and target and confirm again.",
+      "device_broker_switch_failed": "Could not complete the device Broker switch. Check the device and review its current Broker before retrying; HA settings were not saved.",
+      "broker_connect_pending": "The device has selected the target Broker, but its service is not ready. Wait and confirm again; HA settings were not saved."
     }
   },
   "entity": {

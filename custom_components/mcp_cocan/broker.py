@@ -1,5 +1,5 @@
 """Read HA's broker address without copying its credentials to the integration."""
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 import ipaddress
 import socket
 
@@ -52,6 +52,39 @@ def connection_for_broker(uri):
     """Every non-official broker uses MQTT; never fall back to MCP."""
     _, host, _ = broker_endpoint(uri)
     return 'mcp' if host in OFFICIAL_HOSTS else 'mqtt'
+
+
+def public_broker_uri(uri):
+    """Describe an actual device endpoint without exposing its credentials."""
+    parsed = urlsplit(uri)
+    host = parsed.hostname
+    if not host:
+        raise ValueError('Invalid device Broker')
+    authority = f'[{host}]' if ':' in host else host
+    endpoint = f'{parsed.scheme}://{authority}:{parsed.port or (8883 if parsed.scheme == "mqtts" else 1883)}'
+    broker_endpoint(endpoint)
+    return endpoint
+
+
+async def device_broker_uri(hass, uri, local_host):
+    """Use HA MQTT authentication only for the confirmed device-side write.
+
+    The result is transient: never return it to a form or store it in this
+    integration's entry, logs or coordinator.
+    """
+    await validate_ha_broker(hass, uri, local_host)
+    entry = hass.config_entries.async_entries('mqtt')[0]
+    config = {**entry.data, **entry.options}
+    username, password = config.get('username'), config.get('password')
+    parts = urlsplit(uri)
+    credentials = ''
+    if username is not None or password is not None:
+        credentials = quote(username or '', safe='')
+        if password is not None:
+            credentials += ':' + quote(password, safe='')
+        credentials += '@'
+    host = f'[{parts.hostname}]' if ':' in parts.hostname else parts.hostname
+    return f'{parts.scheme}://{credentials}{host}:{parts.port or (8883 if parts.scheme == "mqtts" else 1883)}'
 
 
 async def validate_ha_broker(hass, uri, local_host=''):

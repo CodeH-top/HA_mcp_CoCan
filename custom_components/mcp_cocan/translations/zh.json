@@ -67,14 +67,31 @@
         "menu_options": {
           "settings": "当前连接参数",
           "connection": "MQTT Broker",
-          "official_connection": "恢复官方 Broker"
+          "quick_switch": "快捷切换 Broker"
         }
       },
       "connection": {
         "title": "MQTT Broker",
+        "menu_options": {
+          "official_broker": "官方",
+          "custom_broker": "自定义"
+        }
+      },
+      "custom_broker": {
+        "title": "自定义 MQTT Broker",
         "data": {
           "broker_url": "Broker 地址"
         }
+      },
+      "broker_confirm": {
+        "title": "确认切换 Broker",
+        "description": "当前：{from_broker}（{from_mode}）\n\n目标：{to_broker}（{to_mode}）\n\n确认后切换设备与 Home Assistant 的连接方式。",
+        "data": {
+          "confirm": "确认执行上述切换"
+        }
+      },
+      "quick_switch": {
+        "title": "快捷切换 Broker"
       }
     },
     "error": {
@@ -86,9 +103,12 @@
       "identity_unavailable": "此配置缺少已核实的设备序列号，暂不能切换。",
       "broker_detection_failed": "Broker 地址无效或与 HA MQTT 配置不一致，请先在 HA MQTT 集成中配置同一 Broker。",
       "official_mcp_required": "请先在当前连接参数中填写官方 MCP 地址。",
-      "cannot_connect": "无法连接所选服务。请检查设备实际连接的 Broker；切回官方请使用“恢复官方 Broker”。",
-      "official_switch_failed": "无法恢复设备的官方 Broker，请检查设备局域网地址及连接后重试；未保存 HA 连接设置。",
-      "official_connect_pending": "设备已恢复官方 Broker，但官方 MCP 尚未连接就绪，请稍后重试；未保存 HA 连接设置。"
+      "cannot_connect": "无法连接所选服务，请检查 Broker 地址及认证配置。",
+      "confirmation_required": "请核对当前与目标 Broker，并勾选确认后再切换。",
+      "device_broker_unavailable": "无法读取设备当前 Broker，请检查“当前连接参数”中的设备局域网地址及连接。",
+      "broker_source_changed": "设备的 Broker 已变化，请重新核对当前与目标地址并确认。",
+      "device_broker_switch_failed": "设备 Broker 切换未完成，请检查设备并核对当前地址后重试；未保存 HA 接入设置。",
+      "broker_connect_pending": "设备已选择目标 Broker，但目标服务尚未就绪，请稍后重新确认；未保存 HA 接入设置。"
     }
   },
   "entity": {

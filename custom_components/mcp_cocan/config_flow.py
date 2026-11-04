@@ -275,7 +275,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """
 
     async def async_step_init(self, user_input=None):
-        return self.async_show_menu(step_id="init", menu_options=["settings", "connection", "official_connection"])
+        return self.async_show_menu(step_id="init", menu_options=["settings", "connection", "quick_switch"])
 
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
@@ -394,87 +394,155 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, 15)): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
         }))
 
-    async def async_step_official_connection(self, user_input=None):
-        """Prefill the preserved official endpoint; saving still verifies MCP identity."""
-        self._restore_official = True
-        return await self.async_step_connection(user_input)
-
     async def async_step_connection(self, user_input=None):
-        """Derive protocol from the configured broker, without a mode selector."""
-        from .broker import OFFICIAL_BROKER_URL, connection_for_broker, ha_broker, validate_ha_broker
-        current = self.config_entry.data
-        local_host = current.get("local_host", "")
-        expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
+        """Choose a Broker family before preparing a confirmed switch."""
+        return self.async_show_menu(step_id="connection", menu_options=["official_broker", "custom_broker"])
+
+    async def async_step_official_connection(self, user_input=None):
+        """Route older open dialogs through the same confirmation gate."""
+        return await self.async_step_official_broker()
+
+    async def async_step_official_broker(self, user_input=None):
+        from .broker import OFFICIAL_BROKER_URL
+        self._pending_broker_url = self.config_entry.data.get("official_broker_url", OFFICIAL_BROKER_URL)
+        return await self._show_broker_confirmation()
+
+    async def async_step_custom_broker(self, user_input=None):
+        from .broker import connection_for_broker, ha_broker, validate_ha_broker
+        local_host = self.config_entry.data.get("local_host", "")
         errors = {}
-        official_restored = False
         if user_input is not None:
             try:
-                uri = user_input["broker_url"].strip()
-                mode = connection_for_broker(uri)
-                if not expected_psn.isdigit():
-                    errors["base"] = "identity_unavailable"
-                elif mode == "mqtt":
-                    await validate_ha_broker(self.hass, uri, local_host)
-                    if await _test_mqtt_connection(self.hass, expected_psn) != expected_psn:
-                        errors["base"] = "wrong_device"
-                else:
-                    url = current.get(CONF_MCP_URL, "")
-                    if _validate_mcp_url(url):
-                        errors["base"] = "official_mcp_required"
-                    else:
-                        if getattr(self, "_restore_official", False) and local_host:
-                            from .local_client import LocalClient
-                            try:
-                                async with asyncio.timeout(20):
-                                    await LocalClient(self.hass, local_host, expected_psn).restore_official_broker()
-                                official_restored = True
-                            except Exception:
-                                errors["base"] = "official_switch_failed"
-                        if not errors:
-                            # The official service needs time to observe the new
-                            # device session after the local MQTT client restarts.
-                            async with asyncio.timeout(40):
-                                for attempt in range(6 if official_restored else 1):
-                                    try:
-                                        result = await _test_connection(self.hass, url, TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
-                                        break
-                                    except CannotConnectError:
-                                        if not official_restored or attempt == 5:
-                                            raise
-                                        await asyncio.sleep(2)
-                            if str(result["device_info"].get("psn")) != expected_psn:
-                                errors["base"] = "wrong_device"
-            except ValueError:
+                target = user_input["broker_url"].strip()
+                if connection_for_broker(target) != "mqtt":
+                    raise ValueError('Choose the official Broker menu')
+                await validate_ha_broker(self.hass, target, local_host)
+            except Exception:
                 errors["base"] = "broker_detection_failed"
-            except Exception:
-                errors["base"] = "official_connect_pending" if official_restored else "cannot_connect"
-            if not errors:
-                prefix = current.get("entity_id_prefix", f"{expected_psn}_" if current.get("connection_mode") == "mqtt" else "")
-                new_data = {**current, "connection_mode": mode, "broker_url": uri,
-                            "mqtt_psn": expected_psn, "entity_id_prefix": prefix,
-                            CONF_ENTITIES: current.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG)}
-                # Preserve the real official endpoint independently of the active broker.
-                official = current.get("official_broker_url", OFFICIAL_BROKER_URL)
-                previous = current.get("broker_url", "")
-                if previous and connection_for_broker(previous) == "mcp":
-                    official = previous
-                new_data["official_broker_url"] = uri if mode == "mcp" else official
-                new_data.pop("connection_selection", None)
-                new_data.setdefault(CONF_MCP_URL, "")
-                new_data.setdefault(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP.value)
-                self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
-                self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
-                return self.async_create_entry(title="", data={})
-        broker_url = (user_input or {}).get("broker_url", current.get("broker_url", ""))
-        if user_input is None and getattr(self, "_restore_official", False):
-            broker_url = current.get("official_broker_url", OFFICIAL_BROKER_URL)
-        elif not broker_url and current.get("connection_mode", "mcp") == "mcp":
-            broker_url = current.get("official_broker_url", OFFICIAL_BROKER_URL)
-        if not broker_url:
-            try:
-                broker_url = (await ha_broker(self.hass, local_host))["uri"]
-            except Exception:
-                pass
-        return self.async_show_form(step_id="connection", errors=errors, data_schema=vol.Schema({
-            vol.Required("broker_url", default=broker_url): str,
+            else:
+                self._pending_broker_url = target
+                return await self._show_broker_confirmation()
+        try:
+            default = (await ha_broker(self.hass, local_host))["uri"]
+        except Exception:
+            default = self.config_entry.data.get("custom_broker_url", "")
+            errors.setdefault("base", "broker_detection_failed")
+        return self.async_show_form(step_id="custom_broker", errors=errors, data_schema=vol.Schema({
+            vol.Required("broker_url", default=(user_input or {}).get("broker_url", default)): str,
         }))
+
+    async def _device_broker_profile(self):
+        from .local_client import LocalClient
+        current = self.config_entry.data
+        psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
+        if not psn.isdigit():
+            raise ValueError('Device identity is unavailable')
+        client = LocalClient(self.hass, current.get("local_host", ""), psn)
+        return client, await client.read_profile()
+
+    async def async_step_quick_switch(self, user_input=None):
+        """Prepare the opposite of the actual device Broker, without writing."""
+        from .broker import OFFICIAL_BROKER_URL, connection_for_broker, ha_broker, public_broker_uri
+        try:
+            _, profile = await self._device_broker_profile()
+            source = public_broker_uri(profile['broker'])
+            if connection_for_broker(source) == "mcp":
+                self._pending_broker_url = (await ha_broker(self.hass, self.config_entry.data.get("local_host", "")))["uri"]
+            else:
+                self._pending_broker_url = self.config_entry.data.get("official_broker_url", OFFICIAL_BROKER_URL)
+        except Exception:
+            return self.async_show_form(step_id="quick_switch", errors={"base": "device_broker_unavailable"}, data_schema=vol.Schema({}))
+        return await self._show_broker_confirmation()
+
+    async def _show_broker_confirmation(self, errors=None):
+        from .broker import connection_for_broker, public_broker_uri
+        errors = dict(errors or {})
+        target = self._pending_broker_url
+        # Labels contain endpoints and protocol names only, never authentication.
+        source = "—"
+        from_mode = "—"
+        self._confirmed_source = None
+        try:
+            _, profile = await self._device_broker_profile()
+            source = public_broker_uri(profile['broker'])
+            from_mode = "MCP" if connection_for_broker(source) == "mcp" else "MQTT"
+            self._confirmed_source = source
+        except Exception:
+            errors.setdefault("base", "device_broker_unavailable")
+        return self.async_show_form(step_id="broker_confirm", errors=errors,
+            description_placeholders={"from_broker": source, "from_mode": from_mode,
+                                      "to_broker": target, "to_mode": "MCP" if connection_for_broker(target) == "mcp" else "MQTT"},
+            data_schema=vol.Schema({vol.Required("confirm", default=False): bool}))
+
+    async def async_step_broker_confirm(self, user_input=None):
+        """The only route that can change the device Broker or HA mode."""
+        from .broker import OFFICIAL_BROKER_URL, connection_for_broker, device_broker_uri, public_broker_uri
+        if not getattr(self, "_pending_broker_url", None):
+            return await self.async_step_connection()
+        if not user_input or user_input.get("confirm") is not True:
+            return await self._show_broker_confirmation({"base": "confirmation_required"} if user_input else None)
+        confirmed_source = getattr(self, "_confirmed_source", None)
+        if confirmed_source is None:
+            return await self._show_broker_confirmation({"base": "device_broker_unavailable"})
+        current = self.config_entry.data
+        uri = self._pending_broker_url
+        mode = connection_for_broker(uri)
+        expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
+        if mode == "mcp" and _validate_mcp_url(current.get(CONF_MCP_URL, "")):
+            return await self._show_broker_confirmation({"base": "official_mcp_required"})
+        # Resolve HA authentication before touching the device; this URI is never
+        # kept in the pending form, entry data, coordinator or user-visible result.
+        try:
+            authenticated_uri = await device_broker_uri(self.hass, uri, current.get("local_host", "")) if mode == "mqtt" else None
+        except Exception:
+            return await self._show_broker_confirmation({"base": "broker_detection_failed"})
+        try:
+            client, profile = await self._device_broker_profile()
+            if public_broker_uri(profile['broker']) != confirmed_source:
+                return await self._show_broker_confirmation({"base": "broker_source_changed"})
+            async with asyncio.timeout(20):
+                if mode == "mcp":
+                    await client.restore_official_broker(expected_broker=confirmed_source)
+                else:
+                    await client.set_custom_broker(authenticated_uri, expected_broker=confirmed_source)
+        except Exception:
+            return await self._show_broker_confirmation({"base": "device_broker_switch_failed"})
+        finally:
+            authenticated_uri = None
+        try:
+            async with asyncio.timeout(40):
+                for attempt in range(6):
+                    try:
+                        if mode == "mcp":
+                            result = await _test_connection(self.hass, current[CONF_MCP_URL], TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
+                            actual_psn = str(result["device_info"].get("psn"))
+                        else:
+                            actual_psn = await _test_mqtt_connection(self.hass, expected_psn)
+                        break
+                    except CannotConnectError:
+                        if attempt == 5:
+                            raise
+                        await asyncio.sleep(2)
+                    except Exception:
+                        if mode == "mcp" or attempt == 5:
+                            raise
+                        await asyncio.sleep(2)
+            if actual_psn != expected_psn:
+                return await self._show_broker_confirmation({"base": "wrong_device"})
+        except Exception:
+            return await self._show_broker_confirmation({"base": "broker_connect_pending"})
+        prefix = current.get("entity_id_prefix", f"{expected_psn}_" if current.get("connection_mode") == "mqtt" else "")
+        new_data = {**current, "connection_mode": mode, "broker_url": uri,
+                    "mqtt_psn": expected_psn, "entity_id_prefix": prefix,
+                    CONF_ENTITIES: current.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG)}
+        new_data.pop("connection_selection", None)
+        new_data["official_broker_url"] = uri if mode == "mcp" else current.get("official_broker_url", OFFICIAL_BROKER_URL)
+        if mode == "mqtt":
+            new_data["custom_broker_url"] = uri
+        elif connection_for_broker(confirmed_source) == "mqtt":
+            new_data["custom_broker_url"] = confirmed_source
+        new_data.setdefault(CONF_MCP_URL, "")
+        new_data.setdefault(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP.value)
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
+        return self.async_create_entry(title="", data={})
