@@ -86,11 +86,10 @@ class McpDeviceEntity(CoordinatorEntity):
         # but let the built-in entities use the native translation resources.
         if default_name is None or name != default_name:
             self._attr_name = name
-        if coordinator.source == "mqtt":
-            if self._attr_unique_id.startswith("mqtt_"):
-                self._attr_translation_key = self._attr_unique_id
-                self._attr_name = None
-            self._attr_unique_id = f"{coordinator.psn}_{self._attr_unique_id}"
+        if self._attr_unique_id.startswith("mqtt_"):
+            self._attr_translation_key = self._attr_unique_id
+            self._attr_name = None
+        self._attr_unique_id = coordinator.entity_id_prefix + self._attr_unique_id
         self._attr_icon = config.get("icon")
         ec = config.get("entity_category")
         if ec:

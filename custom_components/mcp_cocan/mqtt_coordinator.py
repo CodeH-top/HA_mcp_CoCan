@@ -9,6 +9,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import TransportType
 from .coordinator import McpDeviceCoordinator
 from .mqtt_client import CocanMqttClient, MqttCommandError
+from .local_client import LocalClient
 from .mqtt_wire import decode, encode_version, integer, message, nested, packed, scalar, text, version, version_tuple
 
 PROTOCOLS = ['None', 'QC2', 'QC3', 'QC3+', 'SFCP', 'AFC', 'FCP', 'SCP', 'VOOC1.0', 'VOOC4.0', 'SVOOC2.0', 'TFCP', 'UFCS', 'PE1', 'PE2', 'PD Fixed 5V', 'PD Fixed High Voltage', 'PD SPR AVS', 'PD PPS', 'PD EPR HV', 'PD AVS', 'PD MiPPS']
@@ -16,10 +17,12 @@ PROTOCOLS = ['None', 'QC2', 'QC3', 'QC3+', 'SFCP', 'AFC', 'FCP', 'SCP', 'VOOC1.0
 
 class CocanMqttCoordinator(McpDeviceCoordinator):
     def __init__(self, hass, entry, entities):
-        super().__init__(hass, '', TransportType.STREAMABLE_HTTP, None, entry.title, entry.data.get('scan_interval', 15), entities)
+        super().__init__(hass, '', TransportType.STREAMABLE_HTTP, None, entry.title, entry.data.get('scan_interval', 15), entities, local_host=entry.data.get('local_host', ''))
         self.psn = entry.data['mqtt_psn']
         self.device_info = {'psn': self.psn}
         self.source = 'mqtt'
+        self.connection_mode = 'mqtt'
+        self.mqtt_ready = False
         self.client = CocanMqttClient(hass, self.psn, self._observe)
         self._stream = {}
         self._stream_time = 0
@@ -63,8 +66,8 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
                 if not power:
                     self._charging_strategy = None
                     self._power_allocations = [None] * 5
-                    self.last_sample = time.time()
-                    return {'get_device_info': self.device_info, 'mqtt_power': {'state': 0}}
+                    self.mqtt_ready = True
+                    return await self._finish_snapshot({'get_device_info': self.device_info, 'mqtt_power': {'state': 0}})
                 status = scalar(await self.client.request(0x44), 1)
                 self._charging_strategy = scalar(await self.client.request(0x48), 1)
                 stats = await self.client.request(0x4A)
@@ -97,13 +100,38 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
                 if self.ota_started and time.monotonic() - self.ota_started > 600:
                     self.ota_started = 0
                     self.ota_result = None  # Timeout is not success.
-                self.last_sample = time.time()
-                return {'get_device_info': self.device_info, 'get_port_details': {'ports': ports},
-                        'get_charging_status': {'status_bitmask': status}, 'mqtt_power': {'state': power}}
-        except (MqttCommandError, ValueError, TypeError, TimeoutError) as exc:
+                self.mqtt_ready = True
+                return await self._finish_snapshot({'get_device_info': self.device_info, 'get_port_details': {'ports': ports},
+                        'get_charging_status': {'status_bitmask': status}, 'mqtt_power': {'state': power}})
+        except (MqttCommandError, ValueError, TypeError, TimeoutError):
             self._charging_strategy = None
             self._power_allocations = [None] * 5
-            raise UpdateFailed(f'MQTT read failed ({type(exc).__name__})') from None
+            self.mqtt_ready = False
+            return await self._finish_snapshot({})
+
+    async def _finish_snapshot(self, data):
+        local = None
+        if self.local_host:
+            try:
+                local = await LocalClient(self.hass, self.local_host, self.psn).read()
+            except Exception:
+                pass  # Identity/HTTP/schema failure does not weaken MQTT checks.
+        if not data and local is None:
+            raise UpdateFailed('Neither MQTT nor verified LAN telemetry is available')
+        self.source = 'mqtt_local' if local is not None and self.mqtt_ready else 'local' if local is not None else 'mqtt'
+        if local is not None:
+            ports = {p['port']: dict(p) for p in data.get('get_port_details', {}).get('ports', [])}
+            for port in local['ports']:
+                ports.setdefault(port['port'], {}).update(port)
+            data['get_port_details'] = {'ports': [ports.get(i, {'port': i}) for i in range(1, 6)]}
+        values = [p.get('power_budget') for p in data.get('get_port_details', {}).get('ports', [])]
+        self._power_allocations = [value if type(value) is int and 0 <= value <= (60 if i == 0 else 140) else None for i, value in enumerate(values)] if len(values) == 5 else [None] * 5
+        self.last_sample = time.time()
+        return data
+
+    def _require_control(self):
+        if not self.mqtt_ready:
+            raise MqttCommandError('MQTT identity and connection have not been verified')
 
     async def async_call_tool(self, tool_name, arguments=None):
         args = arguments or {}
@@ -128,6 +156,7 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
         else:
             raise MqttCommandError('Control not implemented for this schema profile')
         async with self._cycle_lock:
+            self._require_control()
             result = await self.client.request(command, payload)
         if tool_name != 'mqtt_reboot':
             await self.async_request_refresh()
@@ -137,6 +166,7 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
         if len(values) != 5 or any(type(value) is not int or not 0 <= value <= (60 if index == 0 else 140) for index, value in enumerate(values)) or sum(values) > 160:
             raise ValueError('Invalid five-port allocation')
         async with self._command_lock, self._cycle_lock:
+            self._require_control()
             result = await self.client.request(0x5C, packed(1, values))
             self._power_allocations = list(values)
         await self.async_request_refresh()
@@ -152,6 +182,7 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
             if any(v < 0 or v > (60 if i == 0 else 140) for i, v in enumerate(values)) or sum(values) > 160:
                 return False
             async with self._cycle_lock:
+                self._require_control()
                 await self.client.request(0x5C, packed(1, values))
                 self._power_allocations = values
         await self.async_request_refresh()
@@ -182,6 +213,7 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
             raise MqttCommandError('Configured versions are already installed')
         payload = message(1, encode_version(target['sw3566'])) + message(2, encode_version(target['fpga'])) + message(3, encode_version(target['esp32']))
         async with self._command_lock, self._cycle_lock:
+            self._require_control()
             if self.ota_started:
                 raise MqttCommandError('An upgrade is already in progress')
             self.ota_result = None

@@ -71,7 +71,7 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
         keys = SELECT_OPTION_KEYS.get(config.get("unique_id"))
         if keys and option_labels == DEFAULT_SELECT_LABELS[config.get("unique_id")]:
             self._attr_options = list(keys)
-        if coordinator.source == "mqtt" and config.get("unique_id") == "charging_strategy":
+        if coordinator.connection_mode == "mqtt" and config.get("unique_id") == "charging_strategy":
             keep = [i for i, value in enumerate(config["options"]) if value in (0, 1, 7, 8)]
             self._attr_options = [self._attr_options[i] for i in keep]
             self._legacy_options = [self._legacy_options[i] for i in keep]

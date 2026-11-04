@@ -147,6 +147,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         schema = vol.Schema({
             vol.Required("mqtt_psn"): str,
+            vol.Optional("local_host", default=""): str,
             vol.Optional(CONF_DEVICE_NAME, default=DEFAULT_DEVICE_NAME): str,
             vol.Optional(CONF_SCAN_INTERVAL, default=15): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
         })
@@ -154,6 +155,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             client = None
             try:
                 psn = user_input["mqtt_psn"].strip()
+                local_host = user_input.get("local_host", "").strip()
+                if local_host:
+                    validate_local_host(local_host)
                 client = CocanMqttClient(self.hass, psn)
                 await client.start()
                 info = nested(await client.request(0x92), 1, required=True)
@@ -165,7 +169,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(psn)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=user_input.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME), data={
-                    "connection_mode": "mqtt", "mqtt_psn": psn,
+                    "connection_mode": "mqtt", "mqtt_psn": psn, "local_host": local_host,
                     CONF_MCP_URL: "", CONF_TRANSPORT: TransportType.STREAMABLE_HTTP.value,
                     CONF_DEVICE_NAME: user_input.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME),
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15),
@@ -264,7 +268,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     Allows editing connection settings and entity config JSON after setup.
     """
 
-    async def async_step_init(
+    async def async_step_init(self, user_input=None):
+        return self.async_show_menu(step_id="init", menu_options=["settings", "connection"])
+
+    async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage options -- connection settings + entity config."""
@@ -321,7 +328,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         entities_json = json.dumps(current_entities, indent=2, ensure_ascii=False)
 
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=vol.Schema(
                 {
                     vol.Required(
@@ -369,6 +376,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 target = json.loads(user_input.get("firmware_target", "{}"))
                 if not isinstance(target, dict):
                     raise ValueError("Expected object")
+                local_host = user_input.get("local_host", "").strip()
+                if local_host:
+                    validate_local_host(local_host)
                 if target:
                     if not isinstance(target.get("model"), str) or not target["model"]:
                         raise ValueError("Target model required")
@@ -378,12 +388,73 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 errors["base"] = "invalid_json"
             else:
                 self.hass.config_entries.async_update_entry(self.config_entry, data={**current,
+                    "local_host": local_host,
                     "firmware_target": target, "allow_ota": user_input.get("allow_ota", False),
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15)})
                 self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
                 return self.async_create_entry(title="", data={})
         return self.async_show_form(step_id="mqtt_options", errors=errors, data_schema=vol.Schema({
+            vol.Optional("local_host", default=current.get("local_host", "")): str,
             vol.Optional(CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, 15)): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
             vol.Optional("firmware_target", default=json.dumps(current.get("firmware_target", {}))): str,
             vol.Optional("allow_ota", default=current.get("allow_ota", False)): bool,
+        }))
+
+    async def async_step_connection(self, user_input=None):
+        """Switch HA transport after a read-only identity check; never write a broker."""
+        from .mqtt_client import CocanMqttClient
+        from .mqtt_wire import nested, text
+        current = self.config_entry.data
+        values = {**current, **(user_input or {})}
+        errors = {}
+        if user_input is not None:
+            client = None
+            try:
+                mode = user_input["connection_mode"]
+                local_host = user_input.get("local_host", "").strip()
+                if local_host:
+                    validate_local_host(local_host)
+                expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
+                if not expected_psn.isdigit():
+                    errors["base"] = "identity_unavailable"
+                elif mode == "mqtt":
+                    client = CocanMqttClient(self.hass, expected_psn)
+                    await client.start()
+                    info = nested(await client.request(0x92), 1, required=True)
+                    if text(info, 1) != expected_psn:
+                        errors["base"] = "wrong_device"
+                else:
+                    url = user_input.get(CONF_MCP_URL, "").strip()
+                    if _validate_mcp_url(url):
+                        errors["base"] = "invalid_url"
+                    else:
+                        result = await _test_connection(self.hass, url, TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
+                        if str(result["device_info"].get("psn")) != expected_psn:
+                            errors["base"] = "wrong_device"
+            except ValueError:
+                errors["base"] = "invalid_local_host"
+            except Exception:
+                errors["base"] = "cannot_connect"
+            finally:
+                if client:
+                    client.close()
+            if not errors:
+                # Freeze the existing namespace on the first switch. Existing MCP
+                # entries use legacy IDs; native MQTT entries use a PSN prefix.
+                prefix = current.get("entity_id_prefix", f"{expected_psn}_" if current.get("connection_mode") == "mqtt" else "")
+                new_data = {**current, "connection_mode": mode, "mqtt_psn": expected_psn,
+                            "entity_id_prefix": prefix, "local_host": local_host,
+                            CONF_ENTITIES: current.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG)}
+                # Preserve both profiles, including the last official MCP URL.
+                if user_input.get(CONF_MCP_URL, "").strip():
+                    new_data[CONF_MCP_URL] = user_input[CONF_MCP_URL].strip()
+                new_data.setdefault(CONF_MCP_URL, "")
+                new_data.setdefault(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP.value)
+                self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+                self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
+                return self.async_create_entry(title="", data={})
+        return self.async_show_form(step_id="connection", errors=errors, data_schema=vol.Schema({
+            vol.Required("connection_mode", default=values.get("connection_mode", "mcp")): vol.In({"mcp": "官方云（MCP）", "mqtt": "自建 MQTT"}),
+            vol.Optional("local_host", default=values.get("local_host", "")): str,
+            vol.Optional(CONF_MCP_URL, default=values.get(CONF_MCP_URL, "")): str,
         }))

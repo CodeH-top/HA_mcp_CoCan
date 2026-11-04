@@ -56,6 +56,8 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
         self.local_host = local_host
         self.available_tools: set[str] = set()
         self.source = "cloud"
+        self.connection_mode = "mcp"
+        self.entity_id_prefix = ""
         self.last_sample = None
         self._command_lock = asyncio.Lock()
 

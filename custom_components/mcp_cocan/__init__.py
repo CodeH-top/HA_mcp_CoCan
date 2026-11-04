@@ -72,6 +72,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entities_config = mqtt_entities()
         coordinator = CocanMqttCoordinator(hass, entry, entities_config)
         entry.async_on_unload(coordinator.client.close)
+    coordinator.connection_mode = entry.data.get("connection_mode", "mcp")
+    coordinator.entity_id_prefix = entry.data.get("entity_id_prefix", f"{entry.data['mqtt_psn']}_" if coordinator.connection_mode == "mqtt" else "")
     if entry.unique_id and str(entry.unique_id).isdigit():
         coordinator.device_info["psn"] = str(entry.unique_id)
     await coordinator.async_config_entry_first_refresh()
