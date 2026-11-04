@@ -9,7 +9,6 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import TransportType
 from .coordinator import McpDeviceCoordinator
 from .mqtt_client import CocanMqttClient, MqttCommandError
-from .local_client import LocalClient
 from .mqtt_wire import decode, encode_version, integer, message, nested, packed, scalar, text, version, version_tuple
 
 PROTOCOLS = ['None', 'QC2', 'QC3', 'QC3+', 'SFCP', 'AFC', 'FCP', 'SCP', 'VOOC1.0', 'VOOC4.0', 'SVOOC2.0', 'TFCP', 'UFCS', 'PE1', 'PE2', 'PD Fixed 5V', 'PD Fixed High Voltage', 'PD SPR AVS', 'PD PPS', 'PD EPR HV', 'PD AVS', 'PD MiPPS']
@@ -110,20 +109,10 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
             return await self._finish_snapshot({})
 
     async def _finish_snapshot(self, data):
-        local = None
-        if self.local_host:
-            try:
-                local = await LocalClient(self.hass, self.local_host, self.psn).read()
-            except Exception:
-                pass  # Identity/HTTP/schema failure does not weaken MQTT checks.
-        if not data and local is None:
-            raise UpdateFailed('Neither MQTT nor verified LAN telemetry is available')
-        self.source = 'mqtt_local' if local is not None and self.mqtt_ready else 'local' if local is not None else 'mqtt'
-        if local is not None:
-            ports = {p['port']: dict(p) for p in data.get('get_port_details', {}).get('ports', [])}
-            for port in local['ports']:
-                ports.setdefault(port['port'], {}).update(port)
-            data['get_port_details'] = {'ports': [ports.get(i, {'port': i}) for i in range(1, 6)]}
+        """MQTT mode never polls HTTP or falls back to cloud MCP."""
+        self.source = 'mqtt'
+        if not data or not self.mqtt_ready:
+            raise UpdateFailed('MQTT telemetry is unavailable')
         values = [p.get('power_budget') for p in data.get('get_port_details', {}).get('ports', [])]
         self._power_allocations = [value if type(value) is int and 0 <= value <= (60 if i == 0 else 140) else None for i, value in enumerate(values)] if len(values) == 5 else [None] * 5
         self.last_sample = time.time()
