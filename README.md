@@ -1,7 +1,7 @@
 # 小电拼 Home Assistant · MQTT 实验分支
 
 
-**当前检出 `mqtt`，版本 0.4.1b12。MQTT 模式的读取与控制仅走 MQTT，断连即离线；不调用 MCP，也不读取 HTTP JSON。** 默认安装请使用 [main 正式版](https://github.com/CodeH-top/HA_mcp_CoCan)。本分支支持自建 MQTT 和整机电源/重启等实体；已实机验证连接 HA Broker 与持续读取，未逐项验收写入控制，不提供 OTA。请先阅读 [实现范围与验证边界](docs/MQTT.md)。
+**当前检出 `mqtt`，版本 0.4.1b13。MQTT 模式的读取与控制仅走 MQTT，断连即离线；不调用 MCP，也不读取 HTTP JSON。** 默认安装请使用 [main 正式版](https://github.com/CodeH-top/HA_mcp_CoCan)。本分支支持自建 MQTT 和整机电源/重启等实体；已实机验证连接 HA Broker 与持续读取，未逐项验收写入控制，不提供 OTA。请先阅读 [实现范围与验证边界](docs/MQTT.md)。
 
 HACS 如需试用，请显示测试版并选择对应预发布版本；不要把测试分支当成完整小程序替代。下面主线 MCP 安装说明仍适用于选择 MCP 连接方式的情况。
 [![Build and Release](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml/badge.svg)](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml)
@@ -12,6 +12,12 @@ HACS 如需试用，请显示测试版并选择对应预发布版本；不要把
 本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.4.0** 提供内置 Lovelace 控制卡、可选局域网只读遥测、152 个实体的原生中英文翻译，并修复配置向导 500、MCP 会话与数据单位等问题。保持原有实体身份和设备绑定，升级不需要删除设备。
 
 主线通过官方 MCP 控制，局域网 HTTP 只用于读数。独立的 [`mqtt` 分支](https://github.com/CodeH-top/HA_mcp_CoCan/tree/mqtt) 用于自建 Broker 方案，能力和验证边界见 [MQTT 说明](docs/MQTT.md)。
+## 统一设置页（0.4.1b13）
+
+打开侧栏“小电拼设置”，或点击概览卡片的“设置”，直接进入统一大页面 `/cocan-settings`。在同一页查看当前设备连接、动态切换官方/自定义、编辑HA Broker地址、快捷选择相反目标，以及展开来源→目标预览和二次确认；不再逐层进入配置弹窗，也不使用浏览器确认弹窗。修改目标、刷新或取消会使旧预览失效。页面仅管理员可用，确认凭据绑定当前用户和设备、5分钟有效，避免误用过期预览。
+
+HA原生配置向导保留为兼容入口；连接参数与实体管理仍可从统一页底部打开。正常使用Broker切换请直接用统一设置页。设备读取、双向切换、认证与实体身份规则沿用b12。
+
 ## Broker 选择与二次确认（0.4.1b12）
 
 配置首页保留“当前连接参数”“MQTT Broker”“快捷切换 Broker”。进入“MQTT Broker”后选择“官方”或“自定义”；自定义地址默认读取 HA MQTT 集成，支持修改为该集成正在使用的 Broker 地址。快捷切换读取设备当前 Broker，直接准备相反方向的切换。
