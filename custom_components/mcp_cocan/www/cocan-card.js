@@ -92,7 +92,7 @@ class CocanCard extends HTMLElement {
   bindActions(disabled,prefix,port) {
     const entry=this._entry;
     this.shadowRoot.querySelectorAll('[data-port]').forEach(button=>button.onclick=()=>{this._port=Number(button.dataset.port);this.render();});
-    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b15'),dialogParams:{entry_id:entry?.entry_id}}}));
+    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b16'),dialogParams:{entry_id:entry?.entry_id}}}));
     this.shadowRoot.querySelector('[data-action="refresh"]').onclick=async()=>{if(entry){try{await this._hass.callWS({type:'mcp_cocan/refresh',entry_id:entry.entry_id});}catch{this._error='刷新失败，需管理员权限且设备在线。';}}await this.load();};
     this.shadowRoot.querySelector('#device')?.addEventListener('change',event=>{this._config.entry_id=event.target.value;this._port=null;this._history=null;this.render();});
     this.shadowRoot.querySelector('[data-action="device-power"]')?.addEventListener('click',()=>{const state=this.entity('mqtt_device_power');if(this.valid(state))this.command('switch',state.state==='on'?'turn_off':'turn_on',{entity_id:state.entity_id},'切换整机电源会中断供电，是否继续？');});

@@ -200,6 +200,6 @@ async def _async_setup_frontend(hass):
     # Remove the separately registered panel when upgrading from b13.
     if frontend.async_panel_exists(hass, 'cocan-settings'):
         frontend.async_remove_panel(hass, 'cocan-settings')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b15')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b15')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b16')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b16')
     hass.data['mcp_cocan_frontend'] = True
