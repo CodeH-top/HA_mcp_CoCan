@@ -105,3 +105,18 @@ MQTT 模式同样支持 PSN 核验的 LAN 读取，优先使用本地基础数�
 自定义 Broker 的认证与连接仍通过 HA MQTT 集成管理，因此本版要求该地址与 HA MQTT 中的服务器一致；不同地址应先在 HA MQTT 集成中配置。组件不自动改全局 HA MQTT 设置，不复制密码。Broker 地址只表示本集成目标连接，仍不代写设备端 Broker。
 
 原设备 IP、官方 MCP 参数移至“当前连接参数”维护，无需在 Broker 页反复填写。共享实体 ID 和两套参数继续保留。历史 b4 的下拉选项、检测按钮与描述均已由本节替代。
+
+## 0.4.1b6：恢复官方服务器与固件界面
+
+“配置 → 恢复官方 Broker”会预填保留的官方地址 `mqtts://iot-broker.ifanrusercontent.com:8883`，仍须保存并验证同一 PSN 的 MCP 连接。独立保存 `official_broker_url`，切到 HA Broker 不覆盖官方地址或 MCP 参数。此操作只修改 HA 的接入配置；设备自身应先通过本地配置页切回官方服务器，不能把 HA 保存成功视作设备 Broker 已修改。
+
+MQTT 卡片新增固件面板：三芯片当前版本、管理员目标版本、刷新设备版本、原生更新详情、安装目标版本，以及升级中、失败和超时反馈。默认关闭 OTA，启用后仍需明确确认安装；版本/型号校验和禁止降级在后端执行。升级遥测须匹配本次请求的三芯片目标版本；成功遥测显示“设备报告成功”，需刷新设备版本进一步核对。未匹配的报告和请求 ACK 不当作升级成功。
+
+### 官方固件接口调查（2026-11-04）
+
+- [官方 MQTT START_OTA](https://thecandysign.com/cocan/zh/mqtt/reference/) 只接受 ESP32、SW3566、FPGA 的目标版本和 force；没有固件文件上传、下载 URL 或“最新版本查询”参数。本组件只通过 MQTT 发起，不改变设备下载来源。
+- [官方全模 OTA 介绍](https://thecandysign.com/cocan/zh/ota/) 介绍能力，没有机器可读的型号/硬件修订兼容目录、校验和或下载 API。
+- [公开固件配置](https://github.com/ifanrx/IonBridge/blob/main/components/firmware/Kconfig.projbuild) 的 FIRMWARE_DOWNLOAD_ENDPOINT 和 FIRMWARE_CHECKSUM_DOWNLOAD_ENDPOINT 默认空；[升级实现](https://github.com/ifanrx/IonBridge/blob/main/components/firmware/upgrade.cpp) 的下载部分为占位实现，不能据此推导生产接口。
+- [仓库 version.json](https://github.com/ifanrx/IonBridge/blob/main/version.json) 的应用版本 0.9.11 早于已实读设备的 2.2.0，且不是生产固件发布目录。不能用 GitHub 提交、营销页面或单颗芯片版本拼出可刷写的“最新组合”。
+
+因此本版没有宣称接通官方最新固件查询，也没有实现 HA 下载后上传设备。界面明确标记检测未接通，缺目标显示“未配置”，不显示“已是最新”。接通自动检测还需要厂商公开的查询契约（认证、型号/硬件修订/发布渠道、整套版本和下载校验）；本轮不猜测私有 API，也没有实际执行 OTA。

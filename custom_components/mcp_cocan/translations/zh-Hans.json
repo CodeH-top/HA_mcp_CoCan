@@ -69,7 +69,8 @@
         "title": "小电拼配置",
         "menu_options": {
           "settings": "当前连接参数",
-          "connection": "MQTT Broker"
+          "connection": "MQTT Broker",
+          "official_connection": "恢复官方 Broker"
         }
       },
       "connection": {

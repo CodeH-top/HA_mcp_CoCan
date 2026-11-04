@@ -34,7 +34,20 @@ class CocanFirmware(McpDeviceEntity, UpdateEntity):
 
     @property
     def in_progress(self):
-        return bool(self.coordinator.ota_started)
+        return self.coordinator.ota_status == 'installing'
+
+    @property
+    def extra_state_attributes(self):
+        coordinator = self.coordinator
+        return {
+            'firmware_source': 'manual_target',
+            'official_update_check': 'not_available',
+            'ota_enabled': coordinator.allow_ota,
+            'ota_status': coordinator.ota_status,
+            'ota_failure_reason': coordinator.ota_failure_reason,
+            'ota_error': coordinator.ota_error,
+            'target_model': (coordinator.firmware_target or {}).get('model'),
+        }
 
     async def async_install(self, version, backup, **kwargs):
         try:

@@ -46,6 +46,10 @@ class CocanCard extends HTMLElement {
     const port=this._port || 1;
     const prefix=`port_${port}_`;
     const disabled=this._busy || !entry?.available || entry?.control_available===false;
+    const firmware=this.entity('mqtt_firmware_target');
+    const fw=firmware?.attributes||{};
+    const otaStatus=({idle:'未执行升级',installing:'升级进行中',failed:'升级失败',reported_success:'设备报告成功，请刷新核对版本',timeout:'等待升级结果超时'})[fw.ota_status]||'未读取';
+    const canInstall=!disabled && firmware?.state==='on' && (Number(fw.supported_features)&1) && !fw.in_progress && fw.ota_status!=='installing';
     this.shadowRoot.innerHTML=`<style>
       :host{display:block;color:var(--primary-text-color)} *{box-sizing:border-box} ha-card{overflow:hidden;background:var(--ha-card-background,var(--card-background-color));border-radius:20px}
       .wrap{padding:20px;background:color-mix(in srgb,var(--primary-background-color) 85%,#f7b35b 15%)}
@@ -61,7 +65,8 @@ class CocanCard extends HTMLElement {
       <header><h2>${e(entry?.name || '小电拼')}</h2><div><button class="action" data-action="settings">连接设置</button> <button class="action" data-action="refresh" ${this._loading?'disabled':''} aria-label="刷新状态">刷新</button></div></header>
       ${this._entries.length>1?`<div class="row"><label for="device">设备</label><select id="device">${this._entries.map(x=>`<option value="${e(x.entry_id)}" ${x===entry?'selected':''}>${e(x.name)}</option>`).join('')}</select></div>`:''}
       ${!entry?'<p>请先添加小电拼集成，或在卡片配置中选择有效设备。</p>':`
-      ${(entry.connection_mode || entry.source)==='mqtt'?`<div class="row"><span>整机电源：${e(this.text('mqtt_device_power'))}</span><button class="action" data-action="device-power" ${disabled?'disabled':''}>切换电源</button><button class="action" data-action="reboot" ${disabled?'disabled':''}>重启</button></div><p class="muted">固件目标：${e(this.text('mqtt_firmware_target'))} · 详情和安装请在设备的更新实体中操作。</p>`:''}
+      ${(entry.connection_mode || entry.source)==='mqtt'?`<div class="row"><span>整机电源：${e(this.text('mqtt_device_power'))}</span><button class="action" data-action="device-power" ${disabled?'disabled':''}>切换电源</button><button class="action" data-action="reboot" ${disabled?'disabled':''}>重启</button></div>
+      <div class="panel"><strong>固件更新</strong><p>当前：${e(fw.installed_version||'未读取')}</p><p>目标：${e(fw.latest_version||'未配置')}</p><p class="muted">官方最新版本检测未接通；目标版本由管理员核实后配置。</p><p role="status">${e(otaStatus)}${fw.ota_status==='failed'?`（原因 ${e(fw.ota_failure_reason??'—')}，错误 ${e(fw.ota_error??'—')}）`:''}</p><div class="row" style="flex-wrap:wrap"><button class="action" data-action="firmware-refresh" ${disabled?'disabled':''}>刷新设备版本</button><button class="action" data-action="firmware-details" ${firmware?'':'disabled'}>更新详情</button><button class="action" data-action="firmware-install" ${canInstall?'':'disabled'}>安装目标版本</button></div>${!fw.ota_enabled?'<small>手动 OTA 未启用，可在当前连接参数中配置。</small>':''}</div>`:''}
       <p class="muted">连接：${(entry.connection_mode || 'mcp')==='mqtt'?'自建 MQTT':'官方云（MCP）'}${entry.local_url?` · <a href="${e(entry.local_url)}" target="_blank" rel="noopener noreferrer">设备本地配置页</a>`:''}</p>
       <div class="summary"><div><div class="total">${e(this.text('total_power'))}</div><small>总输出功率</small></div><span class="status">${entry.available?'在线':'离线'} · ${e(entry.model||'CoCan')}</span></div>
       <p class="muted">${({cloud:'云端读取',local:'局域网读取 · 控制连接暂不可用',local_cloud:'局域网读数 + 云端信息',mqtt:'本地 MQTT',mqtt_local:'局域网读数 + MQTT 控制'})[entry.source]||'状态读取'}${entry.last_sample?' · '+e(new Date(entry.last_sample*1000).toLocaleTimeString()):''}</p>
@@ -79,6 +84,9 @@ class CocanCard extends HTMLElement {
     this.shadowRoot.querySelector('#device')?.addEventListener('change',event=>{this._config.entry_id=event.target.value;this._history=null;this.render();});
     this.shadowRoot.querySelector('[data-action="device-power"]')?.addEventListener('click',()=>{const state=this.entity('mqtt_device_power');if(this.valid(state))this.command('switch',state.state==='on'?'turn_off':'turn_on',{entity_id:state.entity_id},'切换整机电源会中断供电，是否继续？');});
     this.shadowRoot.querySelector('[data-action="reboot"]')?.addEventListener('click',()=>{const state=this.entity('mqtt_reboot');if(state)this.command('button','press',{entity_id:state.entity_id},'设备即将重启并中断供电，是否继续？');});
+    this.shadowRoot.querySelector('[data-action="firmware-refresh"]')?.addEventListener('click',()=>this.shadowRoot.querySelector('[data-action="refresh"]').click());
+    this.shadowRoot.querySelector('[data-action="firmware-details"]')?.addEventListener('click',()=>{if(firmware)this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:firmware.entity_id},bubbles:true,composed:true}));});
+    this.shadowRoot.querySelector('[data-action="firmware-install"]')?.addEventListener('click',()=>{if(canInstall)this.command('update','install',{entity_id:firmware.entity_id,version:fw.latest_version},`确认安装已核实的目标固件 ${fw.latest_version}？升级会中断所有端口供电，请勿断电。`);});
     for (const action of ['on','off']) this.shadowRoot.querySelector(`[data-action="${action}"]`)?.addEventListener('click',()=>{const state=this.entity(prefix+'charging');if(state)this.command('switch','turn_'+action,{entity_id:state.entity_id},action==='off'?`关闭 ${labels[port-1]} 口将中断该端口供电，是否继续？`:null);});
     this.shadowRoot.querySelectorAll('[data-select]').forEach(select=>select.onchange=()=>this.command('select','select_option',{entity_id:select.dataset.select,option:select.value},select.id==='charging_strategy'?'切换充电策略可能导致端口重新握手，是否继续？':null));
     this.shadowRoot.querySelector('[data-action="chime"]')?.addEventListener('click',()=>{const state=this.entity('hourly_chime');if(state)this.command('switch',state.state==='on'?'turn_off':'turn_on',{entity_id:state.entity_id});});

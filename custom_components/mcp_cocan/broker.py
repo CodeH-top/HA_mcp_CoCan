@@ -7,6 +7,7 @@ from homeassistant.components.network import async_get_source_ip
 
 
 OFFICIAL_HOSTS = {'iot-broker.ifanrusercontent.com'}
+OFFICIAL_BROKER_URL = 'mqtts://iot-broker.ifanrusercontent.com:8883'
 ADDON_HOSTS = {'core-mosquitto', 'core-mosquitto.local.hass.io'}
 
 

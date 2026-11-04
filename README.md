@@ -12,6 +12,12 @@ HACS 如需试用，请显示测试版并选择对应预发布版本；不要把
 本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.4.0** 提供内置 Lovelace 控制卡、可选局域网只读遥测、152 个实体的原生中英文翻译，并修复配置向导 500、MCP 会话与数据单位等问题。保持原有实体身份和设备绑定，升级不需要删除设备。
 
 主线通过官方 MCP 控制，局域网 HTTP 只用于读数。独立的 [`mqtt` 分支](https://github.com/CodeH-top/HA_mcp_CoCan/tree/mqtt) 用于自建 Broker 方案，能力和验证边界见 [MQTT 说明](docs/MQTT.md)。
+## MQTT 实验版 0.4.1b6
+
+本分支的 HACS 预发布版仅填写 Broker 地址即可自动选择协议：官方服务器用 MCP，其余用 HA MQTT；连接失败不回退 MCP。保留官方 Broker 和 MCP 参数，可从“恢复官方 Broker”预填地址切回，设备自身服务器仍须在设备页面配置。
+
+MQTT 控制卡包含整机电源、重启和固件更新面板：显示当前三芯片版本、目标版本、升级状态、详情与手动安装。**官方最新固件查询尚未接通**，目标须管理员核实，OTA 默认关闭；仅有 START_OTA 不代表已实现固件下载/上传。接口调查、兼容边界与来源见 [MQTT 说明](docs/MQTT.md)。通过 HACS 显示测试版本后选择对应预发布版；最新正式版仍是主线 0.4.0。
+
 ## 使用 HACS 安装和更新
 
 1. 在 **HACS → 右上角菜单 → 自定义存储库** 添加 `https://github.com/CodeH-top/HA_mcp_CoCan`，类别选择 **集成**。

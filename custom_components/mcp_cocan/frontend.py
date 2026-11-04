@@ -92,5 +92,5 @@ async def _async_setup_frontend(hass):
     websocket_api.async_register_command(hass, websocket_dashboard)
     websocket_api.async_register_command(hass, websocket_refresh)
     websocket_api.async_register_command(hass, websocket_allocate)
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b5')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b6')
     hass.data['mcp_cocan_frontend'] = True

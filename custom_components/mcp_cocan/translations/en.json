@@ -69,7 +69,8 @@
         "title": "CoCan settings",
         "menu_options": {
           "settings": "Current connection settings",
-          "connection": "MQTT Broker"
+          "connection": "MQTT Broker",
+          "official_connection": "Restore official Broker"
         }
       },
       "connection": {

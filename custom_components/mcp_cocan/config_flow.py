@@ -274,7 +274,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """
 
     async def async_step_init(self, user_input=None):
-        return self.async_show_menu(step_id="init", menu_options=["settings", "connection"])
+        return self.async_show_menu(step_id="init", menu_options=["settings", "connection", "official_connection"])
 
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
@@ -405,9 +405,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional("allow_ota", default=current.get("allow_ota", False)): bool,
         }))
 
+    async def async_step_official_connection(self, user_input=None):
+        """Prefill the preserved official endpoint; saving still verifies MCP identity."""
+        self._restore_official = True
+        return await self.async_step_connection(user_input)
+
     async def async_step_connection(self, user_input=None):
         """Derive protocol from the configured broker, without a mode selector."""
-        from .broker import connection_for_broker, ha_broker, validate_ha_broker
+        from .broker import OFFICIAL_BROKER_URL, connection_for_broker, ha_broker, validate_ha_broker
         current = self.config_entry.data
         local_host = current.get("local_host", "")
         expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
@@ -439,6 +444,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 new_data = {**current, "connection_mode": mode, "broker_url": uri,
                             "mqtt_psn": expected_psn, "entity_id_prefix": prefix,
                             CONF_ENTITIES: current.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG)}
+                # Preserve the real official endpoint independently of the active broker.
+                official = current.get("official_broker_url", OFFICIAL_BROKER_URL)
+                previous = current.get("broker_url", "")
+                if previous and connection_for_broker(previous) == "mcp":
+                    official = previous
+                new_data["official_broker_url"] = uri if mode == "mcp" else official
                 new_data.pop("connection_selection", None)
                 new_data.setdefault(CONF_MCP_URL, "")
                 new_data.setdefault(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP.value)
@@ -446,6 +457,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
                 return self.async_create_entry(title="", data={})
         broker_url = (user_input or {}).get("broker_url", current.get("broker_url", ""))
+        if user_input is None and getattr(self, "_restore_official", False):
+            broker_url = current.get("official_broker_url", OFFICIAL_BROKER_URL)
+        elif not broker_url and current.get("connection_mode", "mcp") == "mcp":
+            broker_url = current.get("official_broker_url", OFFICIAL_BROKER_URL)
         if not broker_url:
             try:
                 broker_url = (await ha_broker(self.hass, local_host))["uri"]
