@@ -61,7 +61,7 @@ class CocanMqttClient:
                         future.set_exception(MqttCommandError(f'Device rejected command (status {status})'))
                     else:
                         future.set_result(nested(fields, COMMANDS[command][1], required=True))
-                elif command in (0x80, 0x81) and scalar(fields, 2) == 0 and self.observer:
+                elif command in (0x80, 0x81, 0x82) and scalar(fields, 2) == 0 and self.observer:
                     self.observer('stream', command, fields)
             elif len(suffix) == 2 and suffix[0] == 'telemetry' and self.observer:
                 self.observer('telemetry', command, fields)

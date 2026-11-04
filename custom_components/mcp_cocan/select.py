@@ -78,6 +78,13 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
             self._config = {**config, "options": [config["options"][i] for i in keep],
                             "option_labels": [config["option_labels"][i] for i in keep]}
 
+        if coordinator.connection_mode == "mqtt" and config.get("unique_id") == "idle_display":
+            keep = [i for i, value in enumerate(config["options"]) if value != "落花"]
+            self._attr_options = [self._attr_options[i] for i in keep]
+            self._legacy_options = [self._legacy_options[i] for i in keep]
+            self._config = {**config, "options": [config["options"][i] for i in keep],
+                            "option_labels": [config["option_labels"][i] for i in keep]}
+
     @property
     def current_option(self) -> str | None:
         """Return the current selected option as a display label.
