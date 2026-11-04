@@ -9,7 +9,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import TransportType
 from .coordinator import McpDeviceCoordinator
 from .mqtt_client import CocanMqttClient, MqttCommandError
-from .mqtt_wire import decode, encode_version, integer, message, nested, packed, scalar, text, version, version_tuple
+from .mqtt_wire import decode, integer, nested, packed, scalar, text, version
 
 PROTOCOLS = ['None', 'QC2', 'QC3', 'QC3+', 'SFCP', 'AFC', 'FCP', 'SCP', 'VOOC1.0', 'VOOC4.0', 'SVOOC2.0', 'TFCP', 'UFCS', 'PE1', 'PE2', 'PD Fixed 5V', 'PD Fixed High Voltage', 'PD SPR AVS', 'PD PPS', 'PD EPR HV', 'PD AVS', 'PD MiPPS']
 
@@ -27,34 +27,12 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
         self._stream_time = 0
         self._stream_requested = 0
         self._cycle_lock = asyncio.Lock()
-        self._catalog = entry.data.get('firmware_target', {})
-        self.allow_ota = entry.data.get('allow_ota', False)
-        self.ota_started = 0
-        self.ota_result = None
-        self.ota_failure_reason = None
-        self.ota_error = None
         self.available_tools = {'mqtt_public_schema'}
 
     def _observe(self, kind, command, fields):
         if kind == 'stream' and command == 0x80:
             self._stream = nested(fields, 112, required=True)
             self._stream_time = time.monotonic()
-        elif kind == 'telemetry' and command == 0x40:
-            upgrade = nested(fields, 40, required=True)
-            # Ignore unsolicited or late reports for another firmware combination.
-            target = self.firmware_target
-            if not self.ota_started or not target or any(
-                version(nested(upgrade, field, required=True)) != target[key]
-                for field, key in ((1, 'esp32'), (2, 'sw3566'), (3, 'fpga'))
-            ):
-                return
-            self.ota_result = scalar(upgrade, 4)
-            self.ota_failure_reason = scalar(upgrade, 5)
-            raw_error = scalar(upgrade, 6)
-            self.ota_error = (raw_error >> 1) ^ -(raw_error & 1)  # protobuf sint32
-            if self.ota_result in (1, 2):
-                self.ota_started = 0
-            self.async_update_listeners()
         # Boot telemetry contains an MCP authentication token: never store it.
 
     async def _async_update_data(self):
@@ -108,9 +86,6 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
                         self._stream_requested = time.monotonic()
                     except MqttCommandError:
                         pass  # Polling remains usable if stream is unsupported.
-                if self.ota_started and time.monotonic() - self.ota_started > 600:
-                    self.ota_started = 0
-                    self.ota_result = 'timeout'  # Timeout is not success.
                 self.mqtt_ready = True
                 return await self._finish_snapshot({'get_device_info': self.device_info, 'get_port_details': {'ports': ports},
                         'get_charging_status': {'status_bitmask': status}, 'mqtt_power': {'state': power}})
@@ -188,48 +163,3 @@ class CocanMqttCoordinator(McpDeviceCoordinator):
                 self._power_allocations = values
         await self.async_request_refresh()
         return True
-
-    @property
-    def ota_status(self):
-        if self.ota_started:
-            return 'timeout' if time.monotonic() - self.ota_started > 600 else 'installing'
-        return {1: 'failed', 2: 'reported_success', 'timeout': 'timeout'}.get(self.ota_result, 'idle')
-
-    @property
-    def firmware_target(self):
-        catalog = self._catalog
-        if not isinstance(catalog, dict) or catalog.get('model') != self.device_info.get('model'):
-            return None
-        try:
-            for key in ('esp32', 'sw3566', 'fpga'):
-                version_tuple(catalog[key])
-        except (KeyError, ValueError, TypeError, AttributeError):
-            return None
-        return catalog
-
-    async def async_install_firmware(self, requested_version=None):
-        target = self.firmware_target
-        if not self.allow_ota or not target:
-            raise MqttCommandError('Explicit OTA opt-in and matching firmware target required')
-        if requested_version is not None and requested_version != target['esp32']:
-            raise MqttCommandError('Only the configured target version is allowed')
-        for target_key, current_key in (('esp32', 'app_version'), ('sw3566', 'bp_version'), ('fpga', 'fpga_version')):
-            if version_tuple(target[target_key]) < version_tuple(self.device_info[current_key]):
-                raise MqttCommandError('Firmware downgrade is not allowed')
-        if all(target[t] == self.device_info[c] for t, c in (('esp32', 'app_version'), ('sw3566', 'bp_version'), ('fpga', 'fpga_version'))):
-            raise MqttCommandError('Configured versions are already installed')
-        payload = message(1, encode_version(target['sw3566'])) + message(2, encode_version(target['fpga'])) + message(3, encode_version(target['esp32']))
-        async with self._command_lock, self._cycle_lock:
-            self._require_control()
-            if self.ota_status == 'installing':
-                raise MqttCommandError('An upgrade is already in progress')
-            self.ota_result = None
-            self.ota_failure_reason = None
-            self.ota_error = None
-            self.ota_started = time.monotonic()
-            try:
-                await self.client.request(0x9C, payload)
-            except BaseException:
-                self.ota_started = 0
-                raise
-        self.async_update_listeners()

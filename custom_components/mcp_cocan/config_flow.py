@@ -373,36 +373,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_mqtt_options(self, user_input=None):
-        from .mqtt_wire import version_tuple
         errors = {}
         current = self.config_entry.data
         if user_input is not None:
+            local_host = user_input.get("local_host", "").strip()
             try:
-                target = json.loads(user_input.get("firmware_target", "{}"))
-                if not isinstance(target, dict):
-                    raise ValueError("Expected object")
-                local_host = user_input.get("local_host", "").strip()
                 if local_host:
                     validate_local_host(local_host)
-                if target:
-                    if not isinstance(target.get("model"), str) or not target["model"]:
-                        raise ValueError("Target model required")
-                    for key in ("esp32", "sw3566", "fpga"):
-                        version_tuple(target[key])
-            except (ValueError, KeyError, AttributeError, TypeError):
-                errors["base"] = "invalid_json"
+            except ValueError:
+                errors["base"] = "invalid_local_host"
             else:
                 self.hass.config_entries.async_update_entry(self.config_entry, data={**current,
                     "local_host": local_host,
-                    "firmware_target": target, "allow_ota": user_input.get("allow_ota", False),
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15)})
                 self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
                 return self.async_create_entry(title="", data={})
         return self.async_show_form(step_id="mqtt_options", errors=errors, data_schema=vol.Schema({
             vol.Optional("local_host", default=current.get("local_host", "")): str,
             vol.Optional(CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, 15)): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
-            vol.Optional("firmware_target", default=json.dumps(current.get("firmware_target", {}))): str,
-            vol.Optional("allow_ota", default=current.get("allow_ota", False)): bool,
         }))
 
     async def async_step_official_connection(self, user_input=None):

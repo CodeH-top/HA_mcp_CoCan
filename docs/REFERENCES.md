@@ -15,3 +15,7 @@
 - KangCharge: `160ed114df6a3e704498cc9acb626a7572f979ee`
 - CoCanBar: `b5ab1625d67e0c692d15cbc83e29135b8665c6f8`
 - IonBridge: `2372580e728ab4309634594cc38bda38b8d2d362`
+
+## 概览卡片的具体界面参考（0.4.1b7）
+
+参考版本与上列 commit 相同。本轮重新阅读 KangCharge 的 `App/DashboardView.swift`、`App/PortViews.swift`、`Shared/CableDiagram.swift`，以及 CoCanBar 的 `Sources/CoCanBar/PanelView.swift`、`PowerDiagram.swift`、`PortChart.swift`。采用五口数字卡、线缆汇入充电器机身、奶油底色与橙色强调、紧凑端口行及点选详情的交互结构，独立实现为三张 HA Lovelace 卡片。SVG 机身与线缆为本项目绘制，没有复制项目图片、SwiftUI 代码或素材。

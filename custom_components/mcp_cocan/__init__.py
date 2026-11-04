@@ -82,7 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    platforms = PLATFORMS + [Platform.BUTTON, Platform.UPDATE] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
+    platforms = PLATFORMS + [Platform.BUTTON] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
     await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
     return True
@@ -90,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    platforms = PLATFORMS + [Platform.BUTTON, Platform.UPDATE] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
+    platforms = PLATFORMS + [Platform.BUTTON] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
     unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)

@@ -44,12 +44,9 @@
   "options": {
     "step": {
       "mqtt_options": {
-        "title": "MQTT and firmware target",
-        "description": "OTA is disabled by default. The target JSON must include verified model, esp32, sw3566 and fpga versions. An empty object means unknown, not up to date.",
+        "title": "MQTT settings",
         "data": {
           "scan_interval": "Polling interval (seconds)",
-          "firmware_target": "Verified firmware target JSON",
-          "allow_ota": "Enable manual OTA (off by default)",
           "local_host": "Device IPv4 or hostname (optional)"
         }
       },

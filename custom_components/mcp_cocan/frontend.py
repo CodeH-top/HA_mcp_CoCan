@@ -23,7 +23,7 @@ async def websocket_dashboard(hass, connection, msg):
         identities = {coordinator.entity_id_prefix + item['unique_id']: item['unique_id'] for item in coordinator.entities_config}
         mode = coordinator.connection_mode
         if mode == 'mqtt':
-            identities.update({coordinator.entity_id_prefix + key: key for key in ('mqtt_reboot', 'mqtt_firmware_target')})
+            identities.update({coordinator.entity_id_prefix + key: key for key in ('mqtt_reboot',)})
         entities = {}
         for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
             key = identities.get(entity.unique_id)
@@ -92,5 +92,5 @@ async def _async_setup_frontend(hass):
     websocket_api.async_register_command(hass, websocket_dashboard)
     websocket_api.async_register_command(hass, websocket_refresh)
     websocket_api.async_register_command(hass, websocket_allocate)
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b6')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b7')
     hass.data['mcp_cocan_frontend'] = True

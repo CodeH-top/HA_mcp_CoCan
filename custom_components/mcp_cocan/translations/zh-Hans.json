@@ -44,12 +44,9 @@
   "options": {
     "step": {
       "mqtt_options": {
-        "title": "MQTT 与固件目标",
-        "description": "默认不执行 OTA。固件目标为你核实过的版本组合 JSON，包含 model、esp32、sw3566、fpga；空对象表示未配置，不代表已是最新。",
+        "title": "MQTT 连接参数",
         "data": {
           "scan_interval": "轮询间隔（秒）",
-          "firmware_target": "核实后的目标版本 JSON",
-          "allow_ota": "允许手动 OTA（默认关闭）",
           "local_host": "设备局域网 IPv4 或主机名（可手动修改）"
         }
       },
