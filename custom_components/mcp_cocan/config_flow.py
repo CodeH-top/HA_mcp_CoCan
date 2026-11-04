@@ -132,6 +132,20 @@ class CannotConnectError(HomeAssistantError):
     """Error to indicate we cannot connect to the MCP server."""
 
 
+async def _test_mqtt_connection(hass, psn):
+    """Load optional MQTT code only after the HA integration is configured."""
+    if not hass.config_entries.async_entries("mqtt"):
+        raise CannotConnectError("Configure the Home Assistant MQTT integration first")
+    from .mqtt_client import CocanMqttClient
+    from .mqtt_wire import nested, text
+    client = CocanMqttClient(hass, psn)
+    try:
+        await client.start()
+        return text(nested(await client.request(0x92), 1, required=True), 1)
+    finally:
+        client.close()
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for MCP Device."""
 
@@ -142,8 +156,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_menu(step_id="user", menu_options=["mcp", "mqtt"])
 
     async def async_step_mqtt(self, user_input=None):
-        from .mqtt_client import CocanMqttClient
-        from .mqtt_wire import nested, text
         errors = {}
         schema = vol.Schema({
             vol.Required("mqtt_psn"): str,
@@ -152,16 +164,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(CONF_SCAN_INTERVAL, default=15): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
         })
         if user_input is not None:
-            client = None
             try:
                 psn = user_input["mqtt_psn"].strip()
                 local_host = user_input.get("local_host", "").strip()
                 if local_host:
                     validate_local_host(local_host)
-                client = CocanMqttClient(self.hass, psn)
-                await client.start()
-                info = nested(await client.request(0x92), 1, required=True)
-                if text(info, 1) != psn:
+                if await _test_mqtt_connection(self.hass, psn) != psn:
                     raise ValueError("Identity mismatch or incompatible public schema")
             except Exception:
                 errors["base"] = "cannot_connect"
@@ -174,9 +182,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_DEVICE_NAME: user_input.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME),
                     CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15),
                 })
-            finally:
-                if client:
-                    client.close()
         return self.async_show_form(step_id="mqtt", data_schema=schema, errors=errors)
 
     async def async_step_mcp(
@@ -402,13 +407,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_connection(self, user_input=None):
         """Switch HA transport after a read-only identity check; never write a broker."""
-        from .mqtt_client import CocanMqttClient
-        from .mqtt_wire import nested, text
         current = self.config_entry.data
         values = {**current, **(user_input or {})}
         errors = {}
         if user_input is not None:
-            client = None
             try:
                 mode = user_input["connection_mode"]
                 local_host = user_input.get("local_host", "").strip()
@@ -418,10 +420,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 if not expected_psn.isdigit():
                     errors["base"] = "identity_unavailable"
                 elif mode == "mqtt":
-                    client = CocanMqttClient(self.hass, expected_psn)
-                    await client.start()
-                    info = nested(await client.request(0x92), 1, required=True)
-                    if text(info, 1) != expected_psn:
+                    if await _test_mqtt_connection(self.hass, expected_psn) != expected_psn:
                         errors["base"] = "wrong_device"
                 else:
                     url = user_input.get(CONF_MCP_URL, "").strip()
@@ -435,9 +434,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 errors["base"] = "invalid_local_host"
             except Exception:
                 errors["base"] = "cannot_connect"
-            finally:
-                if client:
-                    client.close()
             if not errors:
                 # Freeze the existing namespace on the first switch. Existing MCP
                 # entries use legacy IDs; native MQTT entries use a PSN prefix.
