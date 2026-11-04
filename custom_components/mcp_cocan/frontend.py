@@ -194,10 +194,12 @@ async def _async_setup_frontend(hass):
     websocket_api.async_register_command(hass, websocket_refresh)
     websocket_api.async_register_command(hass, websocket_allocate)
     websocket_api.async_register_command(hass, websocket_broker_settings)
+    from .settings_api import websocket_settings
+    websocket_api.async_register_command(hass, websocket_settings)
     # The unified editor opens inside the integration's own settings dialog.
     # Remove the separately registered panel when upgrading from b13.
     if frontend.async_panel_exists(hass, 'cocan-settings'):
         frontend.async_remove_panel(hass, 'cocan-settings')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b14')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b14')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b15')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b15')
     hass.data['mcp_cocan_frontend'] = True

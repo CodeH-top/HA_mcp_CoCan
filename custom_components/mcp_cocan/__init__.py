@@ -45,7 +45,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     token = entry.data.get(CONF_MCP_TOKEN) or None
     device_name = entry.data.get(CONF_DEVICE_NAME, "MCP Device")
     scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-    entities_config = entry.data.get(CONF_ENTITIES, [])
+    from .settings_api import configured_entities
+    entities_config = configured_entities(entry.data)
 
     _LOGGER.info(
         "Setting up MCP Device '%s' with %d entities, transport=%s, interval=%ds",
@@ -67,12 +68,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     if entry.data.get("connection_mode") == "mqtt":
-        from .mqtt_config import mqtt_entities
         from .mqtt_coordinator import CocanMqttCoordinator
-        entities_config = mqtt_entities()
+        entities_config = configured_entities(entry.data, mqtt=True)
         coordinator = CocanMqttCoordinator(hass, entry, entities_config)
         entry.async_on_unload(coordinator.client.close)
     coordinator.connection_mode = entry.data.get("connection_mode", "mcp")
+    coordinator.custom_entity_names = {item.get('unique_id') for item in entry.data.get('entity_overrides', {}).values()}
     coordinator.entity_id_prefix = entry.data.get("entity_id_prefix", f"{entry.data['mqtt_psn']}_" if coordinator.connection_mode == "mqtt" else "")
     if entry.unique_id and str(entry.unique_id).isdigit():
         coordinator.device_info["psn"] = str(entry.unique_id)

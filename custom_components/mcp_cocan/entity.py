@@ -88,7 +88,7 @@ class McpDeviceEntity(CoordinatorEntity):
             self._attr_name = name
         if self._attr_unique_id.startswith("mqtt_"):
             self._attr_translation_key = self._attr_unique_id
-            self._attr_name = None
+            self._attr_name = name if self._attr_unique_id in getattr(coordinator, 'custom_entity_names', set()) else None
         self._attr_unique_id = coordinator.entity_id_prefix + self._attr_unique_id
         self._attr_icon = config.get("icon")
         ec = config.get("entity_category")
