@@ -138,7 +138,44 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 3
 
-    async def async_step_user(
+    async def async_step_user(self, user_input=None):
+        return self.async_show_menu(step_id="user", menu_options=["mcp", "mqtt"])
+
+    async def async_step_mqtt(self, user_input=None):
+        from .mqtt_client import CocanMqttClient
+        from .mqtt_wire import nested, text
+        errors = {}
+        schema = vol.Schema({
+            vol.Required("mqtt_psn"): str,
+            vol.Optional(CONF_DEVICE_NAME, default=DEFAULT_DEVICE_NAME): str,
+            vol.Optional(CONF_SCAN_INTERVAL, default=15): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
+        })
+        if user_input is not None:
+            client = None
+            try:
+                psn = user_input["mqtt_psn"].strip()
+                client = CocanMqttClient(self.hass, psn)
+                await client.start()
+                info = nested(await client.request(0x92), 1, required=True)
+                if text(info, 1) != psn:
+                    raise ValueError("Identity mismatch or incompatible public schema")
+            except Exception:
+                errors["base"] = "cannot_connect"
+            else:
+                await self.async_set_unique_id(psn)
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(title=user_input.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME), data={
+                    "connection_mode": "mqtt", "mqtt_psn": psn,
+                    CONF_MCP_URL: "", CONF_TRANSPORT: TransportType.STREAMABLE_HTTP.value,
+                    CONF_DEVICE_NAME: user_input.get(CONF_DEVICE_NAME, DEFAULT_DEVICE_NAME),
+                    CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15),
+                })
+            finally:
+                if client:
+                    client.close()
+        return self.async_show_form(step_id="mqtt", data_schema=schema, errors=errors)
+
+    async def async_step_mcp(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step 1: Connection settings."""
@@ -151,7 +188,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     validate_local_host(local_host)
                 except ValueError:
-                    return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors={"base": "invalid_local_host"})
+                    return self.async_show_form(step_id="mcp", data_schema=STEP_USER_DATA_SCHEMA, errors={"base": "invalid_local_host"})
             transport = TransportType(user_input[CONF_TRANSPORT])
             token = user_input.get(CONF_MCP_TOKEN)
 
@@ -160,7 +197,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if url_error:
                 errors["base"] = "invalid_url"
                 return self.async_show_form(
-                    step_id="user",
+                    step_id="mcp",
                     data_schema=STEP_USER_DATA_SCHEMA,
                     errors=errors,
                     description_placeholders={
@@ -204,7 +241,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
         return self.async_show_form(
-            step_id="user",
+            step_id="mcp",
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
             description_placeholders={
@@ -231,6 +268,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage options -- connection settings + entity config."""
+        if self.config_entry.data.get("connection_mode") == "mqtt":
+            return await self.async_step_mqtt_options(user_input)
         if user_input is not None:
             entities_json = user_input.get(CONF_ENTITIES, "[]")
             errors: dict[str, str] = {}
@@ -320,3 +359,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             ),
             errors=errors,
         )
+
+    async def async_step_mqtt_options(self, user_input=None):
+        from .mqtt_wire import version_tuple
+        errors = {}
+        current = self.config_entry.data
+        if user_input is not None:
+            try:
+                target = json.loads(user_input.get("firmware_target", "{}"))
+                if not isinstance(target, dict):
+                    raise ValueError("Expected object")
+                if target:
+                    if not isinstance(target.get("model"), str) or not target["model"]:
+                        raise ValueError("Target model required")
+                    for key in ("esp32", "sw3566", "fpga"):
+                        version_tuple(target[key])
+            except (ValueError, KeyError, AttributeError, TypeError):
+                errors["base"] = "invalid_json"
+            else:
+                self.hass.config_entries.async_update_entry(self.config_entry, data={**current,
+                    "firmware_target": target, "allow_ota": user_input.get("allow_ota", False),
+                    CONF_SCAN_INTERVAL: user_input.get(CONF_SCAN_INTERVAL, 15)})
+                self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
+                return self.async_create_entry(title="", data={})
+        return self.async_show_form(step_id="mqtt_options", errors=errors, data_schema=vol.Schema({
+            vol.Optional(CONF_SCAN_INTERVAL, default=current.get(CONF_SCAN_INTERVAL, 15)): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
+            vol.Optional("firmware_target", default=json.dumps(current.get("firmware_target", {}))): str,
+            vol.Optional("allow_ota", default=current.get("allow_ota", False)): bool,
+        }))

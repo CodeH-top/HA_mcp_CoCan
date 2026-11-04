@@ -1,5 +1,9 @@
-# 小电拼 Home Assistant · 中文增强版
+# 小电拼 Home Assistant · MQTT 实验分支
 
+
+**当前检出 `mqtt`，版本 0.4.1b1。** 默认安装请使用 [main 正式版](https://github.com/CodeH-top/HA_mcp_CoCan)。本分支新增自建 MQTT 接入和整机电源/重启/配置目标固件更新实体；未实机切换 Broker 或 OTA。请先阅读 [实现范围、固件配置与验证边界](docs/MQTT.md)。
+
+HACS 如需试用，请显示测试版并选择对应预发布版本；不要把测试分支当成完整小程序替代。下面主线 MCP 安装说明仍适用于选择 MCP 连接方式的情况。
 [![Build and Release](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml/badge.svg)](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml)
 [![Release](https://img.shields.io/github/v/release/CodeH-top/HA_mcp_CoCan)](https://github.com/CodeH-top/HA_mcp_CoCan/releases)
 

@@ -43,7 +43,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up MCP Device select entities from config."""
     coordinator: McpDeviceCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities_config: list[dict] = entry.data.get(CONF_ENTITIES, [])
+    entities_config: list[dict] = coordinator.entities_config
 
     entities: list[SelectEntity] = []
     for config in entities_config:
@@ -68,9 +68,15 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
         else:
             self._attr_options = [str(opt) for opt in config.get("options", [])]
         self._legacy_options = self._attr_options
-        keys = SELECT_OPTION_KEYS.get(self._attr_unique_id)
-        if keys and option_labels == DEFAULT_SELECT_LABELS[self._attr_unique_id]:
+        keys = SELECT_OPTION_KEYS.get(config.get("unique_id"))
+        if keys and option_labels == DEFAULT_SELECT_LABELS[config.get("unique_id")]:
             self._attr_options = list(keys)
+        if coordinator.source == "mqtt" and config.get("unique_id") == "charging_strategy":
+            keep = [i for i, value in enumerate(config["options"]) if value in (0, 1, 7, 8)]
+            self._attr_options = [self._attr_options[i] for i in keep]
+            self._legacy_options = [self._legacy_options[i] for i in keep]
+            self._config = {**config, "options": [config["options"][i] for i in keep],
+                            "option_labels": [config["option_labels"][i] for i in keep]}
 
     @property
     def current_option(self) -> str | None:

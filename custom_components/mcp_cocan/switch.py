@@ -38,7 +38,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up MCP Device switch entities from config."""
     coordinator: McpDeviceCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities_config: list[dict] = entry.data.get(CONF_ENTITIES, [])
+    entities_config: list[dict] = coordinator.entities_config
 
     entities: list[SwitchEntity] = []
     for config in entities_config:

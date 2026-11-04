@@ -2,7 +2,7 @@ name: Build and Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, mqtt]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -50,4 +50,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/mcp_cocan.zip dist/mcp_cocan.zip.sha256 --verify-tag --title "$RELEASE_TAG" --generate-notes
+        run: |
+          RELEASE_ARGS=()
+          if [[ "$RELEASE_TAG" == *b* || "$RELEASE_TAG" == *a* || "$RELEASE_TAG" == *rc* ]]; then
+            RELEASE_ARGS+=(--prerelease)
+          fi
+          gh release create "$RELEASE_TAG" dist/mcp_cocan.zip dist/mcp_cocan.zip.sha256 --verify-tag --title "$RELEASE_TAG" --generate-notes "${RELEASE_ARGS[@]}"

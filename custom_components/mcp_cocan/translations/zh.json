@@ -1,7 +1,7 @@
 {
   "config": {
     "step": {
-      "user": {
+      "mcp": {
         "title": "小电拼配置",
         "description": "通过MCP连接小电拼。请输入小电拼的 MCP Server 地址。配置完成后将自动创建所有实体，你可以在集成选项中修改。",
         "data": {
@@ -11,6 +11,22 @@
           "device_name": "设备名称",
           "scan_interval": "轮询间隔（秒）",
           "local_host": "设备局域网 IP / 主机名（可选）"
+        }
+      },
+      "user": {
+        "title": "小电拼连接方式",
+        "menu_options": {
+          "mcp": "官方 MCP（保留 App 云服务）",
+          "mqtt": "自建 MQTT（实验性公开协议）"
+        }
+      },
+      "mqtt": {
+        "title": "自建 MQTT · 公开协议配置",
+        "description": "先配置 HA MQTT 集成，并将设备接入同一个 Broker。此分支只支持官网 protobuf profile，会先只读验证设备序列号；不兼容固件会拒绝连接。",
+        "data": {
+          "mqtt_psn": "设备序列号 PSN",
+          "device_name": "设备名称",
+          "scan_interval": "轮询间隔（秒）"
         }
       }
     },
@@ -36,6 +52,15 @@
           "scan_interval": "轮询间隔（秒）",
           "entities_config": "实体配置 JSON",
           "local_host": "设备局域网 IP / 主机名（可选）"
+        }
+      },
+      "mqtt_options": {
+        "title": "MQTT 与固件目标",
+        "description": "默认不执行 OTA。固件目标为你核实过的版本组合 JSON，包含 model、esp32、sw3566、fpga；空对象表示未配置，不代表已是最新。",
+        "data": {
+          "scan_interval": "轮询间隔（秒）",
+          "firmware_target": "核实后的目标版本 JSON",
+          "allow_ota": "允许手动 OTA（默认关闭）"
         }
       }
     },
@@ -525,6 +550,9 @@
       },
       "hourly_chime": {
         "name": "整点报时"
+      },
+      "mqtt_device_power": {
+        "name": "整机电源"
       }
     },
     "select": {
@@ -586,6 +614,16 @@
       },
       "port_5_power_alloc": {
         "name": "C4 口分配功率上限"
+      }
+    },
+    "button": {
+      "mqtt_reboot": {
+        "name": "重启设备"
+      }
+    },
+    "update": {
+      "mqtt_firmware_target": {
+        "name": "固件（自定义目标版本）"
       }
     }
   }

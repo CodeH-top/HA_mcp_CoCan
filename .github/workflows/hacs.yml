@@ -2,7 +2,7 @@ name: HACS Action
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, mqtt ]
   pull_request:
 
 jobs:

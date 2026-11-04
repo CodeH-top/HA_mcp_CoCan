@@ -66,6 +66,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         local_host=entry.data.get("local_host", ""),
     )
 
+    if entry.data.get("connection_mode") == "mqtt":
+        from .mqtt_config import mqtt_entities
+        from .mqtt_coordinator import CocanMqttCoordinator
+        entities_config = mqtt_entities()
+        coordinator = CocanMqttCoordinator(hass, entry, entities_config)
+        entry.async_on_unload(coordinator.client.close)
     if entry.unique_id and str(entry.unique_id).isdigit():
         coordinator.device_info["psn"] = str(entry.unique_id)
     await coordinator.async_config_entry_first_refresh()
@@ -74,14 +80,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    platforms = PLATFORMS + [Platform.BUTTON, Platform.UPDATE] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    platforms = PLATFORMS + [Platform.BUTTON, Platform.UPDATE] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
