@@ -1,7 +1,7 @@
 # 小电拼 Home Assistant · MQTT 实验分支
 
 
-**当前检出 `mqtt`，版本 0.4.1b10。MQTT 模式的读取与控制仅走 MQTT，断连即离线；不调用 MCP，也不读取 HTTP JSON。** 默认安装请使用 [main 正式版](https://github.com/CodeH-top/HA_mcp_CoCan)。本分支支持自建 MQTT 和整机电源/重启等实体；已实机验证连接 HA Broker 与持续读取，未逐项验收写入控制，不提供 OTA。请先阅读 [实现范围与验证边界](docs/MQTT.md)。
+**当前检出 `mqtt`，版本 0.4.1b11。MQTT 模式的读取与控制仅走 MQTT，断连即离线；不调用 MCP，也不读取 HTTP JSON。** 默认安装请使用 [main 正式版](https://github.com/CodeH-top/HA_mcp_CoCan)。本分支支持自建 MQTT 和整机电源/重启等实体；已实机验证连接 HA Broker 与持续读取，未逐项验收写入控制，不提供 OTA。请先阅读 [实现范围与验证边界](docs/MQTT.md)。
 
 HACS 如需试用，请显示测试版并选择对应预发布版本；不要把测试分支当成完整小程序替代。下面主线 MCP 安装说明仍适用于选择 MCP 连接方式的情况。
 [![Build and Release](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml/badge.svg)](https://github.com/CodeH-top/HA_mcp_CoCan/actions/workflows/release.yml)
@@ -12,6 +12,10 @@ HACS 如需试用，请显示测试版并选择对应预发布版本；不要把
 本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.4.0** 提供内置 Lovelace 控制卡、可选局域网只读遥测、152 个实体的原生中英文翻译，并修复配置向导 500、MCP 会话与数据单位等问题。保持原有实体身份和设备绑定，升级不需要删除设备。
 
 主线通过官方 MCP 控制，局域网 HTTP 只用于读数。独立的 [`mqtt` 分支](https://github.com/CodeH-top/HA_mcp_CoCan/tree/mqtt) 用于自建 Broker 方案，能力和验证边界见 [MQTT 说明](docs/MQTT.md)。
+## 恢复官方 Broker（0.4.1b11）
+
+修复设备仍连接自建 Broker 时恢复官方报 `cannot_connect` 的问题。使用“恢复官方 Broker”会同步恢复设备端设置，保留厂商证书，不重启整机；官方 MCP 就绪且序列号匹配后才保存 HA 模式。失败时明确区分设备恢复失败与云服务尚未就绪，保留 HA 配置供重试。普通 Broker 表单和后台轮询不会触发设备端写入。
+
 ## 模式切换卸载修复（0.4.1b10）
 
 切换协议时，按正在运行的连接模式卸载实体平台，避免配置已改为 MCP 后漏卸载 MQTT 重启按钮，或切到 MQTT 时误卸载尚未加载的按钮平台。原有152个实体身份保持；切回MCP后，新增32个MQTT专属实体保留注册记录和历史、显示不可用，重新切到MQTT时复用。
@@ -37,7 +41,7 @@ type: custom:cocan-power-card
 
 端口列表使用 `type: custom:cocan-ports-card`；完整控制使用 `type: custom:cocan-card`。概览首页若使用 panel 类型，只能放一个顶层卡片，建议在概览新增普通页签后添加这些卡片，避免破坏现有整页布局。
 
-本分支根据 Broker 地址自动选择协议：官方服务器用 MCP，其余用 HA MQTT；连接失败不回退 MCP。保留官方 Broker 和 MCP 参数，可从“恢复官方 Broker”预填地址切回；设备自身服务器仍须在设备页面配置。通过 HACS 显示测试版本后选择对应预发布版；最新正式版仍是主线 0.4.0。
+本分支根据 Broker 地址自动选择协议：官方服务器用 MCP，其余用 HA MQTT；连接失败不回退 MCP。保留官方 Broker 和 MCP 参数；从“恢复官方 Broker”保存时，会先核验局域网设备身份，清除其自定义 Broker 并重建设备 MQTT 客户端，再等待官方 MCP 就绪。切到自建 MQTT 的设备端配置仍需在设备页面完成。通过 HACS 显示测试版本后选择对应预发布版；最新正式版仍是主线 0.4.0。
 
 **不提供固件更新功能**：已移除 OTA 配置、更新实体与固件安装界面，固件更新请切回官方 Broker 后通过官方 App 处理。旧版本遗留的目标配置不会再执行。MQTT 能力见 [MQTT 说明](docs/MQTT.md)。
 

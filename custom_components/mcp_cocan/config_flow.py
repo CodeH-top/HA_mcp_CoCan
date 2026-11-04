@@ -8,6 +8,7 @@ Single-step flow:
 
 from __future__ import annotations
 
+import asyncio
 import ipaddress
 import json
 import logging
@@ -405,6 +406,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         local_host = current.get("local_host", "")
         expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
         errors = {}
+        official_restored = False
         if user_input is not None:
             try:
                 uri = user_input["broker_url"].strip()
@@ -420,13 +422,32 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     if _validate_mcp_url(url):
                         errors["base"] = "official_mcp_required"
                     else:
-                        result = await _test_connection(self.hass, url, TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
-                        if str(result["device_info"].get("psn")) != expected_psn:
-                            errors["base"] = "wrong_device"
+                        if getattr(self, "_restore_official", False) and local_host:
+                            from .local_client import LocalClient
+                            try:
+                                async with asyncio.timeout(20):
+                                    await LocalClient(self.hass, local_host, expected_psn).restore_official_broker()
+                                official_restored = True
+                            except Exception:
+                                errors["base"] = "official_switch_failed"
+                        if not errors:
+                            # The official service needs time to observe the new
+                            # device session after the local MQTT client restarts.
+                            async with asyncio.timeout(40):
+                                for attempt in range(6 if official_restored else 1):
+                                    try:
+                                        result = await _test_connection(self.hass, url, TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
+                                        break
+                                    except CannotConnectError:
+                                        if not official_restored or attempt == 5:
+                                            raise
+                                        await asyncio.sleep(2)
+                            if str(result["device_info"].get("psn")) != expected_psn:
+                                errors["base"] = "wrong_device"
             except ValueError:
                 errors["base"] = "broker_detection_failed"
             except Exception:
-                errors["base"] = "cannot_connect"
+                errors["base"] = "official_connect_pending" if official_restored else "cannot_connect"
             if not errors:
                 prefix = current.get("entity_id_prefix", f"{expected_psn}_" if current.get("connection_mode") == "mqtt" else "")
                 new_data = {**current, "connection_mode": mode, "broker_url": uri,

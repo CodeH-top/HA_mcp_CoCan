@@ -85,7 +85,10 @@
       "wrong_device": "The target serial number does not match this device.",
       "identity_unavailable": "No verified device PSN; cannot switch this entry.",
       "broker_detection_failed": "Invalid broker address or it does not match HA MQTT. Configure the same broker in HA MQTT first.",
-      "official_mcp_required": "Configure the official MCP URL in connection settings first."
+      "official_mcp_required": "Configure the official MCP URL in connection settings first.",
+      "cannot_connect": "Cannot connect to the selected service. Check the device Broker; use Restore official Broker to switch the device back to the official service.",
+      "official_switch_failed": "Could not restore the device Broker. Check its LAN address and connection, then retry; the HA connection settings were not saved.",
+      "official_connect_pending": "The device has restored its official Broker, but the official MCP service is not ready. Wait briefly and retry; the HA connection settings were not saved."
     }
   },
   "entity": {

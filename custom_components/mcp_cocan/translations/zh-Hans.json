@@ -85,7 +85,10 @@
       "wrong_device": "目标设备序列号不匹配，未修改连接方式。",
       "identity_unavailable": "此配置缺少已核实的设备序列号，暂不能切换。",
       "broker_detection_failed": "Broker 地址无效或与 HA MQTT 配置不一致，请先在 HA MQTT 集成中配置同一 Broker。",
-      "official_mcp_required": "请先在当前连接参数中填写官方 MCP 地址。"
+      "official_mcp_required": "请先在当前连接参数中填写官方 MCP 地址。",
+      "cannot_connect": "无法连接所选服务。请检查设备实际连接的 Broker；切回官方请使用“恢复官方 Broker”。",
+      "official_switch_failed": "无法恢复设备的官方 Broker，请检查设备局域网地址及连接后重试；未保存 HA 连接设置。",
+      "official_connect_pending": "设备已恢复官方 Broker，但官方 MCP 尚未连接就绪，请稍后重试；未保存 HA 连接设置。"
     }
   },
   "entity": {

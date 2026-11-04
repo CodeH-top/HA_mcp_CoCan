@@ -1,4 +1,4 @@
-"""Optional verified LAN telemetry. Read-only; never sends MCP credentials."""
+"""Verified LAN reads and explicitly requested official Broker restoration."""
 from __future__ import annotations
 
 import ipaddress
@@ -6,6 +6,7 @@ import json
 import math
 import re
 import socket
+from urllib.parse import urlsplit
 
 import aiohttp
 
@@ -68,15 +69,19 @@ class LocalClient:
         """Read identity and broker only for an explicit connection switch."""
         return await self._read(True)
 
-    async def _read(self, profile_only: bool) -> dict:
+    async def restore_official_broker(self) -> dict:
+        """Clear the custom Broker and rebuild MQTT only on explicit restoration."""
+        return await self._read(True, restore_official=True)
+
+    async def _read(self, profile_only: bool, restore_official: bool = False) -> dict:
         # Resolve once per snapshot and pin both HTTP requests to this address.
         records = await self.hass.async_add_executor_job(socket.getaddrinfo, self.host, 80, socket.AF_INET, socket.SOCK_STREAM)
         addresses = [item[4][0] for item in records]
         if not addresses or any(not ipaddress.ip_address(ip).is_private or ipaddress.ip_address(ip).is_loopback or ipaddress.ip_address(ip).is_link_local for ip in addresses):
             raise ValueError('Local telemetry must resolve to a private LAN address')
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=4, connect=2)) as session:
-            async def fetch(path):
-                async with session.get(f'http://{addresses[0]}{path}', allow_redirects=False) as response:
+            async def fetch(path, **kwargs):
+                async with session.request(kwargs.pop('method', 'GET'), f'http://{addresses[0]}{path}', allow_redirects=False, **kwargs) as response:
                     if response.status != 200:
                         raise ValueError('Local telemetry HTTP error')
                     raw = bytearray()
@@ -100,5 +105,28 @@ class LocalClient:
                 config, _ = json.JSONDecoder().raw_decode(html[config_marker.end():].lstrip())
                 if not isinstance(config, dict) or not isinstance(config.get('broker'), str):
                     raise ValueError('Device broker config is invalid')
+                if restore_official:
+                    from .broker import OFFICIAL_BROKER_URL
+                    official = urlsplit(OFFICIAL_BROKER_URL)
+                    active = urlsplit(config['broker'])
+                    if (active.scheme, active.hostname, active.port) != (official.scheme, official.hostname, official.port):
+                        endpoints_marker = re.search(r'window\.__ENDPOINTS\s*=\s*', html)
+                        if endpoints_marker is None:
+                            raise ValueError('Device does not advertise Broker restoration')
+                        endpoints, _ = json.JSONDecoder().raw_decode(html[endpoints_marker.end():].lstrip())
+                        if not isinstance(endpoints, list) or not all(path in endpoints for path in ('/setbrokerz', '/destroymqttz', '/startmqttz')):
+                            raise ValueError('Device does not support Broker restoration')
+                        # Empty body removes only the custom override. The protected
+                        # factory Broker and its device certificates stay untouched.
+                        await fetch('/setbrokerz', method='POST', data='', headers={'Content-Type': 'text/plain'})
+                        try:
+                            await fetch('/destroymqttz')
+                        finally:
+                            await fetch('/startmqttz')
+                        profile = await self.read_profile()
+                        restored = urlsplit(profile['broker'])
+                        if (restored.scheme, restored.hostname, restored.port) != (official.scheme, official.hostname, official.port):
+                            raise ValueError('Device did not restore the official Broker')
+                        return profile
                 return {'psn': str(psn), 'broker': config['broker']}
             return normalise_metrics(json.loads(await fetch('/metrics.json')))
