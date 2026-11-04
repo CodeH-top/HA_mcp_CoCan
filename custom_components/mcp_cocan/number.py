@@ -31,6 +31,7 @@ from typing import Any
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_ENTITIES, DOMAIN
@@ -120,7 +121,7 @@ class McpConfigNumber(McpDeviceEntity, NumberEntity):
         try:
             await self.coordinator.async_call_tool(tool, {arg_name: value})
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to set %s: %s", self.name, exc)
+            raise HomeAssistantError("Device command failed") from exc
 
     @callback
     def _handle_coordinator_update(self) -> None:

@@ -34,6 +34,7 @@ from .const import (
 )
 from .default_config import DEFAULT_ENTITIES_CONFIG
 from .utils import validate_entities_config
+from .local_client import validate_local_host
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +80,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
             }
         ),
         vol.Optional(CONF_MCP_TOKEN): str,
+        vol.Optional("local_host", default=""): str,
         vol.Optional(
             CONF_DEVICE_NAME,
             default=DEFAULT_DEVICE_NAME,
@@ -143,7 +145,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            url = user_input[CONF_MCP_URL]
+            url = user_input[CONF_MCP_URL].strip()
+            local_host = user_input.get("local_host", "").strip()
+            if local_host:
+                try:
+                    validate_local_host(local_host)
+                except ValueError:
+                    return self.async_show_form(step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors={"base": "invalid_local_host"})
             transport = TransportType(user_input[CONF_TRANSPORT])
             token = user_input.get(CONF_MCP_TOKEN)
 
@@ -184,6 +192,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=device_name,
                     data={
                         CONF_MCP_URL: url,
+                        "local_host": local_host,
                         CONF_TRANSPORT: transport.value,
                         CONF_MCP_TOKEN: token or "",
                         CONF_DEVICE_NAME: device_name,
@@ -226,6 +235,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             entities_json = user_input.get(CONF_ENTITIES, "[]")
             errors: dict[str, str] = {}
 
+            if _validate_mcp_url(user_input[CONF_MCP_URL]):
+                return await self._show_form({"base": "invalid_url"})
+            local_host = user_input.get("local_host", "").strip()
+            if local_host:
+                try:
+                    validate_local_host(local_host)
+                except ValueError:
+                    return await self._show_form({"base": "invalid_local_host"})
             try:
                 entities = json.loads(entities_json)
                 if not isinstance(entities, list):
@@ -244,13 +261,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                                 CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                             ),
                             CONF_ENTITIES: entities,
+                            "local_host": local_host,
                         }
-                        self.hass.config_entries.async_update_entry(
-                            self.config_entry, data=new_data
-                        )
-                        await self.hass.config_entries.async_reload(
-                            self.config_entry.entry_id
-                        )
+                        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+                        # Reload after returning the flow response.
+                        self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
                         return self.async_create_entry(title="", data={})
             except json.JSONDecodeError:
                 errors["base"] = "invalid_json"
@@ -296,6 +311,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                    vol.Optional("local_host", default=current.get("local_host", "")): str,
                     vol.Optional(
                         CONF_ENTITIES,
                         default=entities_json,

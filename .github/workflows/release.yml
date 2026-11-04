@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
+      - name: Validate bundled card
+        run: node --check custom_components/mcp_cocan/www/cocan-card.js
       - name: Validate and build integration
         env:
           RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}

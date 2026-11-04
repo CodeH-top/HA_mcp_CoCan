@@ -63,9 +63,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device_name=device_name,
         update_interval=scan_interval,
         entities_config=entities_config,
+        local_host=entry.data.get("local_host", ""),
     )
 
+    if entry.unique_id and str(entry.unique_id).isdigit():
+        coordinator.device_info["psn"] = str(entry.unique_id)
     await coordinator.async_config_entry_first_refresh()
+    from .frontend import async_setup_frontend
+    await async_setup_frontend(hass)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 

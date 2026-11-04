@@ -52,6 +52,9 @@ def main() -> None:
             if source.is_file() and '__pycache__' not in source.parts:
                 # HACS zip_release 直接解压至集成目录，因此 ZIP 根层是 manifest.json。
                 package.write(source, source.relative_to(integration))
+        for source in sorted((root / 'licenses').glob('*.txt')):
+            package.write(source, 'licenses/' + source.name)
+        package.write(root / 'docs' / 'REFERENCES.md', 'REFERENCES.md')
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (output / 'mcp_cocan.zip.sha256').write_text(f'{digest}  mcp_cocan.zip\n')
     print(f'已生成 {archive.name} 与 SHA256 校验文件')

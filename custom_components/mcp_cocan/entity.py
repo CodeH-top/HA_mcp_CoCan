@@ -268,7 +268,7 @@ class McpDeviceEntity(CoordinatorEntity):
             except (ValueError, TypeError):
                 continue
 
-        if valid_count == 0:
+        if valid_count != len(field_sources):
             return None
 
         return convert_value(
@@ -296,7 +296,10 @@ class McpDeviceEntity(CoordinatorEntity):
         if self._config.get("compute"):
             return raw
 
-        # For non-computed fields, apply numeric conversions
+        # Identifiers and enum/text fields must not be coerced into floats.
+        # A BSSID such as "12e345" is valid text, not scientific notation.
+        if not any(self._config.get(key) is not None for key in ("device_class", "state_class", "divide_by", "multiply_by", "round_digits", "unit")):
+            return raw
         return convert_value(
             raw,
             divide_by=self._config.get("divide_by"),

@@ -7,7 +7,9 @@ Entities then extract their values from this shared cache.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -15,7 +17,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, TransportType
-from .mcp_client import call_mcp_tool, parse_tool_result
+from .mcp_client import McpClient, McpError, call_mcp_tool, parse_tool_result
+from .local_client import LocalClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
         device_name: str,
         update_interval: int,
         entities_config: list[dict[str, Any]],
+        local_host: str = "",
     ) -> None:
         """Initialize the coordinator."""
         super().__init__(
@@ -49,11 +53,16 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
         self._device_name = device_name
         self._entities_config = entities_config
         self.device_info: dict[str, Any] = {}
+        self.local_host = local_host
+        self.available_tools: set[str] = set()
+        self.source = "cloud"
+        self.last_sample = None
+        self._command_lock = asyncio.Lock()
 
         # Power allocation state — shared across 5 port power number entities.
         # Mutable list that each port entity reads and the coordinator updates.
         # Index 0 = Port A, 1-4 = Port C1-C4.
-        self._power_allocations: list[int] = [0, 0, 0, 0, 0]
+        self._power_allocations: list[int | None] = [None] * 5
 
         # Charging strategy cache — shared by the Charging Strategy select.
         # This is a write-only control; the MCP server has no read API.
@@ -100,8 +109,10 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
             return self._power_allocations[port_index - 1]
         return None
 
-    def get_total_allocated_power(self) -> int:
+    def get_total_allocated_power(self) -> int | None:
         """Return the sum of all port power allocations."""
+        if any(value is None for value in self._power_allocations):
+            return None
         return sum(self._power_allocations)
 
     @property
@@ -122,7 +133,20 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
         per_port_max = 60 if port_index == 1 else 140
         return max(0, min(value, per_port_max))
 
-    async def async_set_power_allocation(
+    async def async_set_allocations(self, values):
+        if len(values) != 5 or any(type(value) is not int or value < 0 or value > (60 if index == 0 else 140) for index, value in enumerate(values)) or sum(values) > MAX_TOTAL_POWER_BUDGET:
+            raise ValueError("Invalid five-port allocation")
+        async with self._command_lock:
+            raw = await call_mcp_tool(self._url, self._transport, "set_port_power_allocation", {"power_allocation": values}, token=self._token)
+            self._power_allocations = list(values)
+        await self.async_request_refresh()
+        return raw
+
+    async def async_set_power_allocation(self, port_index: int, value: int) -> bool:
+        async with self._command_lock:
+            return await self._async_set_power_allocation(port_index, value)
+
+    async def _async_set_power_allocation(
         self, port_index: int, value: int
     ) -> bool:
         """Set power allocation for a single port and push the full array.
@@ -141,6 +165,10 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
 
         # Clamp to per-port max
         clamped = self._clamp_allocation(port_index, int(value))
+
+        if any(item is None for item in self._power_allocations):
+            _LOGGER.warning("Read all port power budgets before changing allocation")
+            return False
 
         # Copy current allocations and update the target port
         new_allocations = list(self._power_allocations)
@@ -185,69 +213,64 @@ class McpDeviceCoordinator(DataUpdateCoordinator):
             )
             return False
 
+    @property
+    def total_allocated_power(self):
+        return self.get_total_allocated_power()
+
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch data from the MCP server.
-
-        Calls each unique poll_tool once, stores results in a dict keyed
-        by tool name. Entities extract their values using JSON paths.
-        """
-        data: dict[str, Any] = {}
-
+        """One MCP session per refresh, with optional verified LAN overlay."""
+        data = {}
+        cloud_ok = False
+        local = None
         try:
-            # Always fetch device_info and machine_facts for device registry
-            # Merge both into device_info so entity.py can read manufacturer,
-            # model, and firmware version from a single source.
-            if not self.device_info:
-                try:
-                    raw_info = await call_mcp_tool(
-                        self._url,
-                        self._transport,
-                        "get_device_info",
-                        token=self._token,
-                    )
-                    self.device_info = parse_tool_result(raw_info) or {}
-                except Exception:
-                    _LOGGER.debug("Could not fetch device_info")
-                    self.device_info = {}
-
+            async with asyncio.timeout(45), McpClient(self._url, self._transport, self._token) as client:
+                if not self.available_tools:
+                    self.available_tools = {item["name"] for item in await client.list_tools()}
+                for name in dict.fromkeys(["get_device_info", "get_machine_facts", *self._poll_tools]):
+                    if name not in self.available_tools:
+                        continue
+                    try:
+                        value = await client.call_tool(name)
+                        if not isinstance(value, dict):
+                            raise McpError("Expected object from device")
+                        data[name] = value
+                        if name == "get_port_details" and value.get("ports"):
+                            cloud_ok = True
+                    except McpError as exc:
+                        _LOGGER.debug("Read %s failed (%s)", name, type(exc).__name__)
+        except (McpError, TimeoutError) as exc:
+            _LOGGER.debug("Cloud read failed (%s)", type(exc).__name__)
+        info = data.get("get_device_info", {})
+        facts = data.get("get_machine_facts", {})
+        if info:
+            self.device_info = {**self.device_info, **facts, **info}
+        if self.local_host and self.device_info.get("psn"):
             try:
-                raw_facts = await call_mcp_tool(
-                    self._url,
-                    self._transport,
-                    "get_machine_facts",
-                    token=self._token,
-                )
-                facts = parse_tool_result(raw_facts) or {}
-                # Merge machine_facts into device_info (prefer device_info values)
-                for key, value in facts.items():
-                    if key not in self.device_info or self.device_info[key] is None:
-                        self.device_info[key] = value
-            except Exception:
-                _LOGGER.debug("Could not fetch machine_facts")
-
-            # Call each unique poll tool
-            for tool_name in self._poll_tools:
-                if tool_name in data:
-                    continue  # Already fetched (e.g. get_device_info)
-                try:
-                    raw = await call_mcp_tool(
-                        self._url,
-                        self._transport,
-                        tool_name,
-                        token=self._token,
-                    )
-                    parsed = parse_tool_result(raw)
-                    data[tool_name] = parsed if parsed is not None else {}
-                except Exception as exc:
-                    _LOGGER.warning("Failed to call tool %s: %s", tool_name, type(exc).__name__)
-                    data[tool_name] = {}
-
-            _LOGGER.debug("Coordinator update success: %d tools polled", len(data))
-            return data
-
-        except Exception as exc:
-            _LOGGER.error("Coordinator update failed: %s", type(exc).__name__)
-            raise UpdateFailed("Error communicating with MCP server") from exc
+                local = await LocalClient(self.hass, self.local_host, str(self.device_info["psn"])).read()
+            except Exception as exc:
+                # Failed identity checks never fall through to unverified reads.
+                _LOGGER.debug("LAN read unavailable (%s)", type(exc).__name__)
+        if not cloud_ok and local is None:
+            raise UpdateFailed("Neither cloud nor verified LAN telemetry is available")
+        if local is not None:
+            existing = {port.get("port"): port for port in data.get("get_port_details", {}).get("ports", [])}
+            # Missing cloud-only fields are not copied from previous refreshes.
+            merged = {index: dict(value) for index, value in existing.items()}
+            for port in local["ports"]:
+                merged.setdefault(port["port"], {}).update(port)
+            ports = [merged.get(index, {"port": index}) for index in range(1, 6)]
+            data["get_port_details"] = {"ports": ports}
+            self.source = "local" if not cloud_ok else "local_cloud"
+        else:
+            self.source = "cloud"
+            # Existing field paths use array position, not returned order.
+            ports = {p.get("port"): p for p in data["get_port_details"]["ports"]}
+            data["get_port_details"]["ports"] = [ports.get(i, {"port": i}) for i in range(1, 6)]
+        ports = data["get_port_details"]["ports"]
+        allocations = [p.get("power_budget") for p in ports]
+        self._power_allocations = [value if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= (60 if index == 0 else 140) else None for index, value in enumerate(allocations)]
+        self.last_sample = time.time()
+        return data
 
     def get_entity_value(self, entity_config: dict[str, Any]) -> Any:
         """Extract a value for an entity from the cached poll data.

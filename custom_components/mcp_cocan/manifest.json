@@ -10,5 +10,10 @@
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/CodeH-top/HA_mcp_CoCan/issues",
-  "version": "0.3.6.1"
+  "version": "0.4.0",
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ]
 }

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+import math
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -62,6 +63,14 @@ class McpConfigSensor(McpDeviceEntity, SensorEntity):
     """
 
     def __init__(self, coordinator: McpDeviceCoordinator, config: dict) -> None:
+        config = dict(config)
+        uid = config.get("unique_id", "")
+        # PD operating values use 10mV / 10mA units, confirmed by clients.
+        if uid.endswith(("_pd_op_v", "_pd_op_a")) and config.get("divide_by") == 1000:
+            config["divide_by"] = 100
+        if uid.endswith("_pd_temp") and config.get("field", "").endswith("status_temperature"):
+            for key in ("device_class", "state_class", "unit"):
+                config.pop(key, None)
         super().__init__(coordinator, config)
 
         # Set device class
@@ -82,6 +91,9 @@ class McpConfigSensor(McpDeviceEntity, SensorEntity):
         self._attr_native_unit_of_measurement = config.get("unit")
 
         # For enum sensors, set options
+        if uid.endswith(("_temp", "_pd_temp")) and not dc_str:
+            self._attr_device_class = SensorDeviceClass.ENUM
+            self._attr_options = ["cool", "moderate", "warm"]
         if config.get("options") and not dc_str:
             self._attr_options = config["options"]
 
@@ -106,7 +118,7 @@ class McpConfigSensor(McpDeviceEntity, SensorEntity):
         )
         dc = self._config.get("device_class")
         if dc in numeric_classes and value is not None:
-            if not isinstance(value, (int, float)):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
                 _LOGGER.warning(
                     "Sensor %s: expected numeric value for device_class=%s, got %s",
                     self.name, dc, type(value).__name__,

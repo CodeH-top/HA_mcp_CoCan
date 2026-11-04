@@ -20,6 +20,7 @@ from typing import Any
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_ENTITIES, DOMAIN
@@ -167,8 +168,8 @@ class McpConfigSelect(McpDeviceEntity, SelectEntity):
                     self.coordinator.set_charging_strategy(int(raw_value))
                 except (ValueError, TypeError):
                     pass
-        except Exception as exc:  # noqa: BLE001
-            _LOGGER.error("Failed to set %s: %s", self.name, exc)
+        except Exception as exc:
+            raise HomeAssistantError("Device command failed") from exc
 
     @callback
     def _handle_coordinator_update(self) -> None:

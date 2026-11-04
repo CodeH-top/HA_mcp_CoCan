@@ -9,14 +9,16 @@
           "transport": "传输类型",
           "mcp_token": "认证 Token（可选）",
           "device_name": "设备名称",
-          "scan_interval": "轮询间隔（秒）"
+          "scan_interval": "轮询间隔（秒）",
+          "local_host": "设备局域网 IP / 主机名（可选）"
         }
       }
     },
     "error": {
       "cannot_connect": "无法连接 MCP 服务器，请检查地址和 Token。",
       "unknown": "发生未知错误，请查看日志。",
-      "invalid_url": "无效的 URL。必须使用 http 或 https 协议，且不能指向环回或链路本地地址。"
+      "invalid_url": "无效的 URL。必须使用 http 或 https 协议，且不能指向环回或链路本地地址。",
+      "invalid_local_host": "请填写设备 IP 或主机名，不要包含协议、路径或端口。"
     },
     "abort": {
       "already_configured": "该 MCP 设备已配置过。"
@@ -32,13 +34,16 @@
           "transport": "传输类型",
           "mcp_token": "认证 Token（可选）",
           "scan_interval": "轮询间隔（秒）",
-          "entities_config": "实体配置 JSON"
+          "entities_config": "实体配置 JSON",
+          "local_host": "设备局域网 IP / 主机名（可选）"
         }
       }
     },
     "error": {
       "invalid_json": "JSON 格式错误，请检查语法。",
-      "validation_error": "配置验证失败，请检查上方的错误信息。"
+      "validation_error": "配置验证失败，请检查上方的错误信息。",
+      "invalid_local_host": "请填写设备 IP 或主机名，不要包含协议、路径或端口。",
+      "invalid_url": "无效的 URL。必须使用 http 或 https 协议，且不能指向环回或链路本地地址。"
     }
   },
   "entity": {
@@ -56,7 +61,12 @@
         "name": "A 口输出电流"
       },
       "port_1_temp": {
-        "name": "A 口温度状态"
+        "name": "A 口温度状态",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_1_connected": {
         "name": "A 口连接状态"
@@ -77,7 +87,12 @@
         "name": "C1 口输出电流"
       },
       "port_2_temp": {
-        "name": "C1 口温度状态"
+        "name": "C1 口温度状态",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_2_connected": {
         "name": "C1 口连接状态"
@@ -98,7 +113,12 @@
         "name": "C2 口输出电流"
       },
       "port_3_temp": {
-        "name": "C2 口温度状态"
+        "name": "C2 口温度状态",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_3_connected": {
         "name": "C2 口连接状态"
@@ -119,7 +139,12 @@
         "name": "C3 口输出电流"
       },
       "port_4_temp": {
-        "name": "C3 口温度状态"
+        "name": "C3 口温度状态",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_4_connected": {
         "name": "C3 口连接状态"
@@ -140,7 +165,12 @@
         "name": "C4 口输出电流"
       },
       "port_5_temp": {
-        "name": "C4 口温度状态"
+        "name": "C4 口温度状态",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_5_connected": {
         "name": "C4 口连接状态"
@@ -329,19 +359,44 @@
         "name": "C4 口PD 工作电流"
       },
       "port_1_pd_temp": {
-        "name": "A 口PD 状态温度"
+        "name": "A 口PD 状态温度",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_2_pd_temp": {
-        "name": "C1 口PD 状态温度"
+        "name": "C1 口PD 状态温度",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_3_pd_temp": {
-        "name": "C2 口PD 状态温度"
+        "name": "C2 口PD 状态温度",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_4_pd_temp": {
-        "name": "C3 口PD 状态温度"
+        "name": "C3 口PD 状态温度",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_5_pd_temp": {
-        "name": "C4 口PD 状态温度"
+        "name": "C4 口PD 状态温度",
+        "state": {
+          "cool": "偏凉",
+          "moderate": "适中",
+          "warm": "偏热"
+        }
       },
       "port_1_pd_pdo": {
         "name": "A 口请求 PDO 编号"

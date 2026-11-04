@@ -5,8 +5,9 @@
 
 通过制糖工厂官方 MCP 云服务接入小电拼，支持官方 App 与 Home Assistant 共存，无需切换设备的 MQTT 接入方式，也无需设备与 HA 位于同一局域网。
 
-本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.3.6.1** 补齐 152 个默认实体名称与 5 组控制选项的 HA 原生中英文翻译，并修复新版 Home Assistant 打开配置选项时的 500 错误。保留原有 domain、实体 unique ID 和设备绑定，不需要重新添加设备。用户自行设置的实体名称不会被翻译覆盖。
+本仓库是 [Adisonyao/HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan) 的维护分支，基于上游 v0.3.6。当前版本 **0.4.0** 提供内置 Lovelace 控制卡、可选局域网只读遥测、152 个实体的原生中英文翻译，并修复配置向导 500、MCP 会话与数据单位等问题。保持原有实体身份和设备绑定，升级不需要删除设备。
 
+主线通过官方 MCP 控制，局域网 HTTP 只用于读数。独立的 [`mqtt` 分支](https://github.com/CodeH-top/HA_mcp_CoCan/tree/mqtt) 用于自建 Broker 方案，能力和验证边界见 [MQTT 说明](docs/MQTT.md)。
 ## 使用 HACS 安装和更新
 
 1. 在 **HACS → 右上角菜单 → 自定义存储库** 添加 `https://github.com/CodeH-top/HA_mcp_CoCan`，类别选择 **集成**。
@@ -53,14 +54,35 @@
 
 官方 MCP 接口没有整机开机、关机或重启方法，只提供 `turn_on_port` / `turn_off_port` 控制充电输出。这两个方法接受端口数组，因此协议可一次操作全部 5 个端口，但当前集成仅提供逐端口开关实体。关闭全部端口不等于整机断电，设备的 Wi-Fi 与控制服务仍会运行。
 
-### 当前限制
+## 内置控制面板
 
-- 充电策略没有读取接口，初始状态可能为 `unknown`，外部 App 更改后无法自动同步。
-- 未连接端口的 PD、线缆和电池字段显示未知属于正常情况。
-- 上游仍有部分诊断字段类型或单位解析问题，例如 PD 状态温度、序列号/BSSID 格式、总分配功率；本次汉化未修复这些数据问题，不应将这些字段用于关键自动化。
-- CP-02 不支持 CP-02S 专属屏幕功能；默认配置仍可能生成相应实体，可在实体设置中禁用。
-- 总功率分配不得超过 160W；各端口滑块提交的是完整 5 端口数组。
-- 当前通过云端轮询，依赖设备联网与厂商服务器，不提供本地离线控制。
+集成加载后会自动注册 `custom:cocan-card`。刷新浏览器，在仪表盘编辑器添加“小电拼控制面板”，或使用 YAML：
+
+```yaml
+type: custom:cocan-card
+# 多设备时可指定配置条目 ID；也可通过卡片编辑器选择。
+# entry_id: ...
+```
+
+面板包含五口功率图、端口状态与 PD 信息、充电/屏幕选项、完整五口临时功率分配，以及复用 HA Recorder 的最近两小时曲线。UI 参考 KangCharge、CoCanBar，并为 HA 独立实现，详见 [引用和许可](docs/REFERENCES.md)。无需额外安装前端仓库，也不向浏览器发送 MCP 地址或凭据。
+
+## 局域网 metrics.json：可选读取与回退
+
+在集成的“配置”中填写 **局域网主机**（仅 IPv4 或主机名，不带 `http://`、端口和路径）。建议给小电拼保留 DHCP 地址。HA 必须能访问设备的 HTTP 80 端口；留空继续纯 MCP 模式。
+
+每轮先核对设备首页 `window.__INFOZ.psn` 与配置设备序列号，再读取 `/metrics.json`。核验失败、超时、重定向、非法字段时放弃本地读数并保留云端方案；两条路径均失败才报告不可用。有效的本地电压、电流和功率预算优先，PD、温度、累计电量等仍取本轮云端数据。不会把上轮云数据伪装成本轮读取。
+
+该接口不是完整控制协议，也没有稳定公开的版本契约。`session_charge` 原始单位不明确，不换算成 mWh；缺少的数据显示未知，不补零。只允许解析到私有 IPv4 地址，限制响应大小和超时，并禁止重定向。本实现已做协议及回退模拟验证，真实设备 LAN 兼容性须以配置的 IP 与固件实际返回为准。
+
+### 当前限制与修复
+
+- MCP 无整机电源、重启、OTA、固件更新查询、当前策略读取；不把“全部端口关闭”称为整机关机。
+- 充电策略显示本次集成运行期间上次成功设置值，外部 App 改动无法同步。
+- 空闲端口的充电状态不代表端口是否被禁用；未连接的 PD/线缆/电池字段可能未知。
+- 修正 PD 工作电压/电流单位为 10mV/10mA；温度等级作为状态而非摄氏度；PSN/BSSID 保留文本。
+- 云端不返回完整功率预算时，单口滑块拒绝写入。可在卡片明确填写全部五口预算，合计不得超过 160W；不会把其它未知端口设为零。
+- 局域网提供离线基础遥测，不提供离线 MCP 控制。CP-02 不支持 CP-02S 专属屏幕功能，可禁用不适用实体。
+- 自定义实体配置保持兼容；历史版本未隔离不同设备的默认 unique ID，因此本版主要验证已有单设备升级，不承诺多设备身份迁移。
 
 ## 开发、构建和发布
 
@@ -70,15 +92,15 @@
 python3 scripts/build_release.py --check
 ```
 
-GitHub Actions 在 main 提交、Pull Request 和手动触发时校验 Python/JSON、实体身份重复与翻译覆盖，并生成可下载的构建附件。发布新版本时：
+GitHub Actions 在 main 提交、Pull Request 和手动触发时校验 Python/JSON、前端 JavaScript 语法、实体身份重复与翻译覆盖，并生成可下载的构建附件。发布新版本时：
 
 1. 修改 `custom_components/mcp_cocan/manifest.json` 的版本号，并更新说明。
 2. 提交并推送 main。
-3. 创建并推送对应的 `v<版本号>` 标签，例如 `v0.3.6.1`。
+3. 创建并推送对应的 `v<版本号>` 标签，例如 `v0.4.0`。
 4. Actions 检查标签与 manifest 版本一致，构建 ZIP 和 SHA256，自动发布到 GitHub Releases；HACS 从正式 Release 获取更新。
 
 汉化通过 HA 的 `translation_key` 与 `translations/en.json`、`zh.json`、`zh-Hans.json` 实现，保持实体 ID 与设备命令参数不变。下拉实体状态使用规范的英文键（如亮度 `low`、待机动画 `clock`），HA 界面按语言显示中文；服务调用同时接受新版状态键和旧版标签。依赖旧状态字符串的自动化条件需相应调整。配置选项兼容修复移除了对新版 HA 只读 `OptionsFlow.config_entry` 的手动赋值。
 
 ## 致谢与许可
 
-原作者：[Adisonyao](https://github.com/Adisonyao)，原始项目：[HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan)。本维护分支保留原作者署名，并按 [GNU GPL v3](LICENSE) 继续发布。厂商 MCP 协议与服务由制糖工厂提供；本项目为第三方开源集成，与厂商无隶属关系。
+原作者：[Adisonyao](https://github.com/Adisonyao)，原始项目：[HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan)。本维护分支保留原作者署名，并按 [GNU GPL v3](LICENSE) 继续发布。UI 参考项目的 MIT 许可原文见 [licenses](licenses/)，源码及发布包保留署名与引用。厂商 MCP 协议与服务由制糖工厂提供；本项目为第三方开源集成，与厂商无隶属关系。
