@@ -69,16 +69,13 @@
         "title": "CoCan settings",
         "menu_options": {
           "settings": "Current connection settings",
-          "connection": "Official cloud / custom MQTT"
+          "connection": "MQTT Broker"
         }
       },
       "connection": {
-        "title": "Switch Home Assistant connection",
-        "description": "Home Assistant broker: {ha_broker}. Detection reads the device homepage once and verifies its PSN: official broker uses MCP; a custom broker must match HA MQTT and uses MQTT. This does not change the device broker or copy broker credentials. Shared entity IDs are preserved. Detection runs when saving this form, not during normal MQTT polling.",
+        "title": "MQTT Broker",
         "data": {
-          "connection_mode": "Connection mode",
-          "local_host": "Device IPv4 or hostname (optional)",
-          "mcp_url": "Official device MCP URL (required for official mode)"
+          "broker_url": "Broker address"
         }
       }
     },
@@ -89,7 +86,8 @@
       "invalid_url": "Invalid URL. Must use http or https scheme and not point to loopback or link-local address.",
       "wrong_device": "The target serial number does not match this device.",
       "identity_unavailable": "No verified device PSN; cannot switch this entry.",
-      "broker_detection_failed": "Cannot verify the device broker or match it to Home Assistant MQTT."
+      "broker_detection_failed": "Invalid broker address or it does not match HA MQTT. Configure the same broker in HA MQTT first.",
+      "official_mcp_required": "Configure the official MCP URL in connection settings first."
     }
   },
   "entity": {

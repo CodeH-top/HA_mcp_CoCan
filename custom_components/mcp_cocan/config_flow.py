@@ -406,33 +406,26 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         }))
 
     async def async_step_connection(self, user_input=None):
-        """Switch HA transport after a read-only identity check; never write a broker."""
-        from .broker import detect_connection, ha_broker
+        """Derive protocol from the configured broker, without a mode selector."""
+        from .broker import connection_for_broker, ha_broker, validate_ha_broker
         current = self.config_entry.data
-        values = {**current, **(user_input or {})}
+        local_host = current.get("local_host", "")
+        expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
         errors = {}
         if user_input is not None:
             try:
-                selection = user_input["connection_mode"]
-                mode = selection
-                local_host = user_input.get("local_host", "").strip()
-                if local_host:
-                    validate_local_host(local_host)
-                expected_psn = str(current.get("mqtt_psn") or self.config_entry.unique_id or "")
+                uri = user_input["broker_url"].strip()
+                mode = connection_for_broker(uri)
                 if not expected_psn.isdigit():
                     errors["base"] = "identity_unavailable"
-                else:
-                    if selection == "auto":
-                        if not local_host:
-                            raise ValueError("Local host required to detect device broker")
-                        mode = await detect_connection(self.hass, local_host, expected_psn)
-                if not errors and mode == "mqtt":
+                elif mode == "mqtt":
+                    await validate_ha_broker(self.hass, uri, local_host)
                     if await _test_mqtt_connection(self.hass, expected_psn) != expected_psn:
                         errors["base"] = "wrong_device"
-                elif not errors and mode == "mcp":
-                    url = user_input.get(CONF_MCP_URL, "").strip()
+                else:
+                    url = current.get(CONF_MCP_URL, "")
                     if _validate_mcp_url(url):
-                        errors["base"] = "invalid_url"
+                        errors["base"] = "official_mcp_required"
                     else:
                         result = await _test_connection(self.hass, url, TransportType(current.get(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP)), current.get(CONF_MCP_TOKEN) or None)
                         if str(result["device_info"].get("psn")) != expected_psn:
@@ -442,26 +435,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             except Exception:
                 errors["base"] = "cannot_connect"
             if not errors:
-                # Freeze the existing namespace on the first switch. Existing MCP
-                # entries use legacy IDs; native MQTT entries use a PSN prefix.
                 prefix = current.get("entity_id_prefix", f"{expected_psn}_" if current.get("connection_mode") == "mqtt" else "")
-                new_data = {**current, "connection_mode": mode, "connection_selection": selection, "mqtt_psn": expected_psn,
-                            "entity_id_prefix": prefix, "local_host": local_host,
+                new_data = {**current, "connection_mode": mode, "broker_url": uri,
+                            "mqtt_psn": expected_psn, "entity_id_prefix": prefix,
                             CONF_ENTITIES: current.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG)}
-                # Preserve both profiles, including the last official MCP URL.
-                if user_input.get(CONF_MCP_URL, "").strip():
-                    new_data[CONF_MCP_URL] = user_input[CONF_MCP_URL].strip()
+                new_data.pop("connection_selection", None)
                 new_data.setdefault(CONF_MCP_URL, "")
                 new_data.setdefault(CONF_TRANSPORT, TransportType.STREAMABLE_HTTP.value)
                 self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
                 self.hass.async_create_task(self.hass.config_entries.async_reload(self.config_entry.entry_id))
                 return self.async_create_entry(title="", data={})
-        try:
-            detected_broker = (await ha_broker(self.hass, values.get("local_host", "")))["uri"]
-        except Exception:
-            detected_broker = "未配置或无法识别 / Not configured or unavailable"
-        return self.async_show_form(step_id="connection", errors=errors, description_placeholders={"ha_broker": detected_broker}, data_schema=vol.Schema({
-            vol.Required("connection_mode", default=values.get("connection_selection", values.get("connection_mode", "auto"))): vol.In({"auto": "根据设备 Broker 检测", "mcp": "官方云（MCP）", "mqtt": "HA MQTT Broker"}),
-            vol.Optional("local_host", default=values.get("local_host", "")): str,
-            vol.Optional(CONF_MCP_URL, default=values.get(CONF_MCP_URL, "")): str,
+        broker_url = (user_input or {}).get("broker_url", current.get("broker_url", ""))
+        if not broker_url:
+            try:
+                broker_url = (await ha_broker(self.hass, local_host))["uri"]
+            except Exception:
+                pass
+        return self.async_show_form(step_id="connection", errors=errors, data_schema=vol.Schema({
+            vol.Required("broker_url", default=broker_url): str,
         }))

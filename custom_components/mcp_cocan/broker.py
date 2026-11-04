@@ -5,7 +5,6 @@ import socket
 
 from homeassistant.components.network import async_get_source_ip
 
-from .local_client import LocalClient
 
 OFFICIAL_HOSTS = {'iot-broker.ifanrusercontent.com'}
 ADDON_HOSTS = {'core-mosquitto', 'core-mosquitto.local.hass.io'}
@@ -14,7 +13,7 @@ ADDON_HOSTS = {'core-mosquitto', 'core-mosquitto.local.hass.io'}
 def broker_endpoint(uri):
     """Return endpoint only; never return username, password, path or query."""
     parsed = urlsplit(uri)
-    if parsed.scheme not in ('mqtt', 'mqtts') or not parsed.hostname:
+    if parsed.scheme not in ('mqtt', 'mqtts') or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ('', '/'):
         raise ValueError('Unsupported device broker URI')
     return parsed.scheme, parsed.hostname.lower().rstrip('.'), parsed.port or (8883 if parsed.scheme == 'mqtts' else 1883)
 
@@ -48,19 +47,21 @@ async def ha_broker(hass, device_host=''):
     return {'scheme': scheme, 'host': host, 'port': port, 'uri': f'{scheme}://{host}:{port}'}
 
 
-async def detect_connection(hass, local_host, psn):
-    profile = await LocalClient(hass, local_host, psn).read_profile()
-    scheme, host, port = broker_endpoint(profile['broker'])
-    if host in OFFICIAL_HOSTS:
-        return 'mcp'
+def connection_for_broker(uri):
+    """Every non-official broker uses MQTT; never fall back to MCP."""
+    _, host, _ = broker_endpoint(uri)
+    return 'mcp' if host in OFFICIAL_HOSTS else 'mqtt'
+
+
+async def validate_ha_broker(hass, uri, local_host=''):
+    scheme, host, port = broker_endpoint(uri)
     configured = await ha_broker(hass, local_host)
     if (scheme, port) != (configured['scheme'], configured['port']):
-        raise ValueError('Device broker does not match HA MQTT configuration')
+        raise ValueError('Broker does not match HA MQTT configuration')
     if host != configured['host']:
         def addresses(name):
             return {record[4][0] for record in socket.getaddrinfo(name, None, socket.AF_INET, socket.SOCK_STREAM)}
         device_ips = await hass.async_add_executor_job(addresses, host)
         ha_ips = await hass.async_add_executor_job(addresses, configured['host'])
         if not device_ips.intersection(ha_ips):
-            raise ValueError('Device broker does not match HA MQTT configuration')
-    return 'mqtt'
+            raise ValueError('Broker does not match HA MQTT configuration')
