@@ -74,7 +74,7 @@
       },
       "connection": {
         "title": "切换 HA 连接方式",
-        "description": "先在设备本地网页切换设备 Broker，再在此选择对应的 HA 连接方式。官方云由 HA 通过 MCP 接入，不直连厂商 Broker。本向导只读核对目标序列号，失败不改当前配置，保留原 MCP 地址与实体身份；不会代写设备 Broker。",
+        "description": "已读取 HA Broker：{ha_broker}。选择“根据设备 Broker 检测”时，一次性读取设备首页并核对序列号：官方 Broker 走 MCP，自建 Broker 与 HA 配置匹配后走 MQTT。保留共享实体 ID，不复制账号密码，也不代写设备 Broker。检测在此表单保存时执行，正常 MQTT 轮询不会访问 HTTP 或 MCP。",
         "data": {
           "connection_mode": "连接方式",
           "local_host": "设备局域网 IPv4 或主机名（可手动修改）",
@@ -88,7 +88,8 @@
       "invalid_local_host": "请输入 IPv4 或主机名，不含协议、端口和路径。",
       "invalid_url": "无效的 URL。必须使用 http 或 https 协议，且不能指向环回或链路本地地址。",
       "wrong_device": "目标设备序列号不匹配，未修改连接方式。",
-      "identity_unavailable": "此配置缺少已核实的设备序列号，暂不能切换。"
+      "identity_unavailable": "此配置缺少已核实的设备序列号，暂不能切换。",
+      "broker_detection_failed": "无法核验设备 Broker 或与 HA MQTT 配置匹配，请检查设备 IP、Broker 和端口。"
     }
   },
   "entity": {

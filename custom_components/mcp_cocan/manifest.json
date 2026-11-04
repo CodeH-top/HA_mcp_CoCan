@@ -12,11 +12,12 @@
   "dependencies": [
     "frontend",
     "http",
+    "network",
     "websocket_api"
   ],
   "documentation": "https://github.com/CodeH-top/HA_mcp_CoCan",
   "integration_type": "hub",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/CodeH-top/HA_mcp_CoCan/issues",
-  "version": "0.4.1b3"
+  "version": "0.4.1b4"
 }

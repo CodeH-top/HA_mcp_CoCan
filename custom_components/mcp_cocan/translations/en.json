@@ -74,7 +74,7 @@
       },
       "connection": {
         "title": "Switch Home Assistant connection",
-        "description": "Change the DEVICE broker in its local web page first, then select the matching HA connection here. Official cloud uses MCP; this does not connect HA directly to the vendor broker. Setup only reads the target PSN. Failed checks keep the current profile and entity IDs. The previous MCP URL is preserved. This does not write the device broker.",
+        "description": "Home Assistant broker: {ha_broker}. Detection reads the device homepage once and verifies its PSN: official broker uses MCP; a custom broker must match HA MQTT and uses MQTT. This does not change the device broker or copy broker credentials. Shared entity IDs are preserved. Detection runs when saving this form, not during normal MQTT polling.",
         "data": {
           "connection_mode": "Connection mode",
           "local_host": "Device IPv4 or hostname (optional)",
@@ -88,7 +88,8 @@
       "invalid_local_host": "Enter an IPv4 address or hostname without scheme, port or path.",
       "invalid_url": "Invalid URL. Must use http or https scheme and not point to loopback or link-local address.",
       "wrong_device": "The target serial number does not match this device.",
-      "identity_unavailable": "No verified device PSN; cannot switch this entry."
+      "identity_unavailable": "No verified device PSN; cannot switch this entry.",
+      "broker_detection_failed": "Cannot verify the device broker or match it to Home Assistant MQTT."
     }
   },
   "entity": {

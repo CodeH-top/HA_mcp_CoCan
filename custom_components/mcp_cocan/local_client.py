@@ -62,6 +62,13 @@ class LocalClient:
         self.expected_psn = str(expected_psn)
 
     async def read(self) -> dict:
+        return await self._read(False)
+
+    async def read_profile(self) -> dict:
+        """Read identity and broker only for an explicit connection switch."""
+        return await self._read(True)
+
+    async def _read(self, profile_only: bool) -> dict:
         # Resolve once per snapshot and pin both HTTP requests to this address.
         records = await self.hass.async_add_executor_job(socket.getaddrinfo, self.host, 80, socket.AF_INET, socket.SOCK_STREAM)
         addresses = [item[4][0] for item in records]
@@ -86,4 +93,12 @@ class LocalClient:
             psn = info.get('psn') if isinstance(info, dict) else None
             if str(psn) != self.expected_psn:
                 raise ValueError('Local device identity mismatch')
+            if profile_only:
+                config_marker = re.search(r'window\.__CONFIG\s*=\s*', html)
+                if config_marker is None:
+                    raise ValueError('Device broker config is unavailable')
+                config, _ = json.JSONDecoder().raw_decode(html[config_marker.end():].lstrip())
+                if not isinstance(config, dict) or not isinstance(config.get('broker'), str):
+                    raise ValueError('Device broker config is invalid')
+                return {'psn': str(psn), 'broker': config['broker']}
             return normalise_metrics(json.loads(await fetch('/metrics.json')))
