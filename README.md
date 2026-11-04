@@ -131,3 +131,13 @@ GitHub Actions 在 main 提交、Pull Request 和手动触发时校验 Python/JS
 ## 致谢与许可
 
 原作者：[Adisonyao](https://github.com/Adisonyao)，原始项目：[HA_mcp_CoCan](https://github.com/Adisonyao/HA_mcp_CoCan)。本维护分支保留原作者署名，并按 [GNU GPL v3](LICENSE) 继续发布。UI 参考项目的 MIT 许可原文见 [licenses](licenses/)，源码及发布包保留署名与引用。厂商 MCP 协议与服务由制糖工厂提供；本项目为第三方开源集成，与厂商无隶属关系。
+
+### 单独调整卡片尺寸（0.4.1b8）
+
+卡片默认跟随 HA 主题的背景、文字和边框颜色；橙色只用于功率与线缆，机身保留浅色实物示意。编辑任意一张卡片，可分别选择紧凑/标准/宽松，并设置最大宽度（260–1200 像素），各卡片互不影响。实际宽度仍受仪表盘列宽限制；需要更宽时，在 Sections 布局的卡片“布局”页调整占用列数。Masonry 布局的列宽由 HA 管理，最大宽度不会强行撑破列。
+
+```yaml
+type: custom:cocan-power-card
+size: compact
+max_width: 420
+```
