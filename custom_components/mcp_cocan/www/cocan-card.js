@@ -10,7 +10,7 @@ class CocanCard extends HTMLElement {
   constructor(){super();this.attachShadow({mode:'open'});this._entries=[];this._busy=false;this._error='';this._chart='power';this._page='control';}
   static getStubConfig(){return {type:'custom:cocan-card'};}
   static async getConfigElement(){return document.createElement('cocan-card-editor');}
-  setConfig(config){this._config={...config,appearance:['official','ha'].includes(config.appearance)?config.appearance:'auto',size:['compact','regular','large'].includes(config.size)?config.size:'regular',max_width:config.max_width===0?0:config.max_width!==undefined&&config.max_width!==null&&config.max_width!==''&&Number.isFinite(Number(config.max_width))?Math.min(3200,Math.max(260,Number(config.max_width))):(this.view==='full'?0:560)};this._signature='';this.render();}
+  setConfig(config){this._config={...config,appearance:['official','ha'].includes(config.appearance)?config.appearance:'auto',size:['compact','regular','large'].includes(config.size)?config.size:'regular',max_width:config.max_width===0?0:config.max_width!==undefined&&config.max_width!==null&&config.max_width!==''&&Number.isFinite(Number(config.max_width))?Math.min(3200,Math.max(260,Number(config.max_width))):(this.view==='full'?0:560)};if(this.view==='full'){delete this._config.max_width;delete this._config.size;}this._signature='';this.render();}
   set hass(value){this._hass=value;if(!this._loaded&&!this._loading)this.load();this.render();if(this._history)this._history.hass=value;}
   getCardSize(){return {full:20,ports:13,power:7,modes:5,controls:6,allocation:4,history:5}[this.view]||5;}
   getGridOptions(){return {columns:12,rows:'auto',min_columns:6};}
@@ -70,7 +70,7 @@ class CocanCard extends HTMLElement {
   }
   diagram(){
     const e=escapeHTML;
-    return `<div class="diagram" role="group" aria-label="C1 C2 C3 C4 A 五口功率连线图"><div class="chips">${ports.map(({index,label})=>`<div class="chip ${this.portStatus(index).kind}"><strong>${label}</strong><b>${e(this.text(`port_${index}_power`))}</b><small>${e(this.text(`port_${index}_protocol`))}</small></div>`).join('')}</div><img class="charger-art" src="/mcp_cocan/charger.svg?v=0.4.1b25" alt="小电拼充电器" width="408" height="150"></div>`;
+    return `<div class="diagram" role="group" aria-label="C1 C2 C3 C4 A 五口功率连线图"><div class="chips">${ports.map(({index,label})=>`<div class="chip ${this.portStatus(index).kind}"><strong>${label}</strong><b>${e(this.text(`port_${index}_power`))}</b><small>${e(this.text(`port_${index}_protocol`))}</small></div>`).join('')}</div><img class="charger-art" src="/mcp_cocan/charger.svg?v=0.4.1b26" alt="小电拼充电器" width="408" height="150"></div>`;
   }
   portList(disabled){
     const e=escapeHTML;
@@ -157,7 +157,7 @@ class CocanCard extends HTMLElement {
     const entry=this._entry;
     this.shadowRoot.querySelectorAll('[data-chart]').forEach(button=>button.onclick=()=>{this._chart=button.dataset.chart;this.render();});
     this.shadowRoot.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{const state=this.entity('charging_strategy');if(!disabled&&state&&state.state!=='unavailable'&&state.state!==button.dataset.mode)this.command('select','select_option',{entity_id:state.entity_id,option:button.dataset.mode},'切换充电模式可能导致端口重新握手，是否继续？');});
-    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b25'),dialogParams:{entry_id:entry?.entry_id}}}));
+    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b26'),dialogParams:{entry_id:entry?.entry_id}}}));
     this.shadowRoot.querySelector('[data-action="refresh"]').onclick=async()=>{if(entry){try{await this._hass.callWS({type:'mcp_cocan/refresh',entry_id:entry.entry_id});}catch{this._error='刷新失败，需管理员权限且设备在线。';}}await this.load();};
     this.shadowRoot.querySelector('#device')?.addEventListener('change',event=>{this._config.entry_id=event.target.value;this._history=null;this.render();});
     this.shadowRoot.querySelectorAll('[data-toggle-port]').forEach(button=>button.onclick=()=>{const index=Number(button.dataset.togglePort),state=this.entity(`port_${index}_charging`);if(!disabled&&this.valid(state)&&['on','off'].includes(state.state))this.command('switch',state.state==='on'?'turn_off':'turn_on',{entity_id:state.entity_id},state.state==='on'?`关闭 ${ports.find(p=>p.index===index).label} 口将中断该端口供电，是否继续？`:null);});
@@ -193,7 +193,7 @@ const modularCard = view => class extends CocanCard {
 const CocanModesCard=modularCard('modes'),CocanControlsCard=modularCard('controls'),CocanAllocationCard=modularCard('allocation'),CocanHistoryCard=modularCard('history');
 class CocanCardEditor extends HTMLElement {
   set hass(value){this._hass=value;this.draw();}
-  setConfig(config){this._config={...config};this._drawn=false;this.draw();}
+  setConfig(config){this._config={...config};if(!config.type||config.type==='custom:cocan-card'){delete this._config.max_width;delete this._config.size;}this._drawn=false;this.draw();}
   async draw(){
     if(!this._hass||!this._config||this._drawn)return;
     this._drawn=true;let entries;
@@ -212,7 +212,8 @@ class CocanCardEditor extends HTMLElement {
     for(const [value,label] of [['auto','继承所在概览主题'],['official','官方暖白（深色跟随 HA）'],['ha','跟随 HA 主题']]){const option=document.createElement('option');option.value=value;option.textContent=label;option.selected=(this._config.appearance||'auto')===value;appearance.append(option);}
     appearance.onchange=()=>{this._config.appearance=appearance.value;emit();};
     const hint=document.createElement('small');hint.textContent='默认铺满所在容器，填写像素值可限制宽度；Sections 布局也可在“布局”页调宽。';
-    this.replaceChildren(field('设备',select),field('卡片尺寸',size),field('配色风格',appearance),field('最大宽度（像素，留空铺满）',width),hint);
+    if(!this._config.type||this._config.type==='custom:cocan-card'){this.replaceChildren(field('设备',select),field('配色风格',appearance));}
+    else this.replaceChildren(field('设备',select),field('卡片尺寸',size),field('配色风格',appearance),field('最大宽度（像素，留空铺满）',width),hint);
   }
 }
 for(const [name,component] of [['cocan-card',CocanCard],['cocan-power-card',CocanPowerCard],['cocan-ports-card',CocanPortsCard],['cocan-modes-card',CocanModesCard],['cocan-controls-card',CocanControlsCard],['cocan-allocation-card',CocanAllocationCard],['cocan-history-card',CocanHistoryCard],['cocan-card-editor',CocanCardEditor]])if(!customElements.get(name))customElements.define(name,component);
