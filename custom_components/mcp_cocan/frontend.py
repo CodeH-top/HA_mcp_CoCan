@@ -189,6 +189,7 @@ async def _async_setup_frontend(hass):
     # No MCP URLs or credentials are sent to frontend assets or websocket data.
     await hass.http.async_register_static_paths([
         StaticPathConfig('/mcp_cocan/broker-settings.js', str(Path(__file__).parent / 'www' / 'broker-settings.js'), False),
+        StaticPathConfig('/mcp_cocan/charger.svg', str(Path(__file__).parent / 'www' / 'charger.svg'), False),
         StaticPathConfig('/mcp_cocan/cocan-card.js', str(Path(__file__).parent / 'www' / 'cocan-card.js'), False)
     ])
     websocket_api.async_register_command(hass, websocket_dashboard)
@@ -201,6 +202,6 @@ async def _async_setup_frontend(hass):
     # Remove the separately registered panel when upgrading from b13.
     if frontend.async_panel_exists(hass, 'cocan-settings'):
         frontend.async_remove_panel(hass, 'cocan-settings')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b24')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b24')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b25')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b25')
     hass.data['mcp_cocan_frontend'] = True
