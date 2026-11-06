@@ -1,6 +1,24 @@
 # 小电拼 Home Assistant · MQTT 实验分支
 
 
+## 0.4.1b22：小程序风格多卡片
+
+原 `custom:cocan-card` 现在是多卡片总览：设备概览、充电/电量图谱、实时调度、模式、屏幕与设备、功率分配分成独立圆角卡片，卡片之间留出间隔，保持官方暖白配色。没有社区功能。原 YAML 不用更换。
+
+也可在“添加卡片”搜索“小电拼”，分别添加并独立排列、调宽和调尺寸：
+
+| 卡片类型 | 内容 |
+| --- | --- |
+| `custom:cocan-power-card` | 设备与功率图谱、五口连线图 |
+| `custom:cocan-ports-card` | C1/C2/C3/C4/A 全部端口读数与开关 |
+| `custom:cocan-modes-card` | 充电模式 |
+| `custom:cocan-controls-card` | 温控、屏幕、报时与 MQTT 整机控制 |
+| `custom:cocan-allocation-card` | 临时功率分配 |
+| `custom:cocan-history-card` | 自动加载 HA Recorder 最近两小时五口功率曲线 |
+
+每张卡片都可通过可视化编辑器选择设备、配色与尺寸。`custom:cocan-card` 提供按顺序整合好的多卡片布局；需要完全自由排版时使用上表的独立卡片。曲线复用 HA Recorder，未启用记录时不会产生虚构历史。
+
+
 ## 0.4.1b21：官方小程序风格
 
 按用户提供的官方截图和本机微信小程序设备包的编译样式，核对主色：暖白 `#F8F5EC`、白卡 `#FFFFFF`、主文字 `#121212`、主橙 `#FF4600`、模式橙 `#FFA51E`。以这些设计参数独立实现 HA 卡片；未打包小程序代码、图片、图标或业务资源。
