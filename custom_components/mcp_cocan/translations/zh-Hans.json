@@ -108,7 +108,8 @@
       "device_broker_unavailable": "无法读取设备当前 Broker，请检查“当前连接参数”中的设备局域网地址及连接。",
       "broker_source_changed": "设备的 Broker 已变化，请重新核对当前与目标地址并确认。",
       "device_broker_switch_failed": "设备 Broker 切换未完成，请检查设备并核对当前地址后重试；未保存 HA 接入设置。",
-      "broker_connect_pending": "设备已选择目标 Broker，但目标服务尚未就绪，请稍后重新确认；未保存 HA 接入设置。"
+      "broker_connect_pending": "设备已选择目标 Broker，但目标服务尚未就绪，请稍后重新确认；未保存 HA 接入设置。",
+      "switch_in_progress": "Broker 切换正在进行，请稍候。"
     }
   },
   "entity": {
@@ -659,6 +660,9 @@
     "button": {
       "mqtt_reboot": {
         "name": "重启设备"
+      },
+      "broker_toggle": {
+        "name": "切换官方 / HA MQTT"
       }
     },
     "update": {

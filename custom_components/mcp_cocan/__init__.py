@@ -31,6 +31,7 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.SELECT,
     Platform.NUMBER,
+    Platform.BUTTON,
 ]
 
 
@@ -83,19 +84,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    platforms = PLATFORMS + [Platform.BUTTON] if entry.data.get("connection_mode") == "mqtt" else PLATFORMS
-    await hass.config_entries.async_forward_entry_setups(entry, platforms)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    # Options update entry.data before reloading. Unload the platforms of the
-    # running coordinator, not those of the newly selected connection mode.
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    platforms = PLATFORMS + [Platform.BUTTON] if coordinator.connection_mode == "mqtt" else PLATFORMS
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, platforms)
+    # Both transports load the button platform for the persistent shortcut.
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok

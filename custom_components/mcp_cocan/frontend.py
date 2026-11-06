@@ -22,6 +22,7 @@ async def websocket_dashboard(hass, connection, msg):
         if coordinator is None:
             continue
         identities = {coordinator.entity_id_prefix + item['unique_id']: item['unique_id'] for item in coordinator.entities_config}
+        identities[coordinator.entity_id_prefix + "broker_toggle"] = "broker_toggle"
         mode = coordinator.connection_mode
         if mode == 'mqtt':
             identities.update({coordinator.entity_id_prefix + key: key for key in ('mqtt_reboot',)})
@@ -200,6 +201,6 @@ async def _async_setup_frontend(hass):
     # Remove the separately registered panel when upgrading from b13.
     if frontend.async_panel_exists(hass, 'cocan-settings'):
         frontend.async_remove_panel(hass, 'cocan-settings')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b17')
-    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b17')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/broker-settings.js?v=0.4.1b18')
+    frontend.add_extra_js_url(hass, '/mcp_cocan/cocan-card.js?v=0.4.1b18')
     hass.data['mcp_cocan_frontend'] = True

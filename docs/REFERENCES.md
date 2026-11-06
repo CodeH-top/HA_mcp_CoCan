@@ -23,3 +23,8 @@
 ## MQTT 数据补全（0.4.1b9）
 
 `mqtt_data.py` 的 USB VID 厂商名称表改编自 CoCanBar `Sources/CoCanKit/PortIdentity.swift`（同上 commit，MIT，Copyright (c) 2026 yangyihang96）。保留文件内署名及 licenses/CoCanBar-MIT.txt；线缆电压/USB速度编号参照该文件的USB规格映射。只按厂商ID给品牌和规格标签，不复制云端产品库、不猜设备型号。其余协议字段独立实现。
+
+
+## 五口平铺与功率分组（0.4.1b18，2026-11-06）
+
+再次核对 GitHub main：KangCharge `160ed114df6a3e704498cc9acb626a7572f979ee`、CoCanBar `b5ab1625d67e0c692d15cbc83e29135b8665c6f8`，与前述参考版本一致。阅读 KangCharge 的 `App/DashboardView.swift`、`App/PortViews.swift`、`Shared/Theme.swift`，CoCanBar 的 `Sources/CoCanBar/PanelView.swift`、`PowerDiagram.swift`、`Theme.swift`。借鉴总功率/模式的视觉层级、紧凑端口标识与读数分组；独立实现 HA 主题化功率分布条、全部端口平铺、供电开关和响应式分栏。C1/C2/C3/C4/A 为用户指定的显示顺序，协议与实体身份不变。未复制 SwiftUI 源码、图标或截图，既有署名与 MIT 许可继续随包分发。

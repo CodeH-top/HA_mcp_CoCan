@@ -108,7 +108,8 @@
       "device_broker_unavailable": "Cannot read the current device Broker. Check its LAN address and connection in Current connection settings.",
       "broker_source_changed": "The device Broker changed. Review the updated source and target and confirm again.",
       "device_broker_switch_failed": "Could not complete the device Broker switch. Check the device and review its current Broker before retrying; HA settings were not saved.",
-      "broker_connect_pending": "The device has selected the target Broker, but its service is not ready. Wait and confirm again; HA settings were not saved."
+      "broker_connect_pending": "The device has selected the target Broker, but its service is not ready. Wait and confirm again; HA settings were not saved.",
+      "switch_in_progress": "A Broker switch is already in progress."
     }
   },
   "entity": {
@@ -659,6 +660,9 @@
     "button": {
       "mqtt_reboot": {
         "name": "Restart device"
+      },
+      "broker_toggle": {
+        "name": "Switch official / HA MQTT"
       }
     },
     "update": {

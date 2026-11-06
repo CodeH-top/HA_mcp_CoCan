@@ -475,6 +475,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=vol.Schema({vol.Required("confirm", default=False): bool}))
 
     async def async_step_broker_confirm(self, user_input=None):
+        """Serialize settings and shortcut writes for the same device."""
+        lock = self.hass.data.setdefault('mcp_cocan_broker_switch_locks', {}).setdefault(self.config_entry.entry_id, asyncio.Lock())
+        if lock.locked():
+            return await self._show_broker_confirmation({'base': 'switch_in_progress'})
+        async with lock:
+            return await self._apply_broker_confirmation(user_input)
+
+    async def _apply_broker_confirmation(self, user_input=None):
         """The only route that can change the device Broker or HA mode."""
         from .broker import OFFICIAL_BROKER_URL, connection_for_broker, device_broker_uri, public_broker_uri
         if not getattr(self, "_pending_broker_url", None):
