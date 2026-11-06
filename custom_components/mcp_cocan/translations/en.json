@@ -594,6 +594,9 @@
       },
       "mqtt_device_power": {
         "name": "Device power"
+      },
+      "all_ports_charging": {
+        "name": "All Ports"
       }
     },
     "select": {

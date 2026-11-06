@@ -43,7 +43,7 @@ async def async_setup_entry(
     entities: list[SwitchEntity] = []
     for config in entities_config:
         if config.get("type") == "switch":
-            entities.append(McpConfigSwitch(coordinator, config))
+            entities.append((CocanAllPortsSwitch if config.get('unique_id') == 'all_ports_charging' else McpConfigSwitch)(coordinator, config))
 
     if entities:
         _LOGGER.info("Creating %d switch entities", len(entities))
@@ -102,3 +102,29 @@ class McpConfigSwitch(McpDeviceEntity, SwitchEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         self.async_write_ha_state()
+
+
+class CocanAllPortsSwitch(McpConfigSwitch):
+    """On means at least one output is enabled; commands always target all five."""
+
+    def _port_mask(self):
+        raw = self._get_raw_value()
+        if type(raw) not in (int, str):
+            return None
+        try:
+            mask = int(raw)
+        except ValueError:
+            return None
+        return mask if 0 <= mask <= 31 else None
+
+    @property
+    def is_on(self) -> bool | None:
+        mask = self._port_mask()
+        return bool(mask) if mask is not None else None
+
+    @property
+    def extra_state_attributes(self):
+        mask = self._port_mask()
+        if mask is None:
+            return {'enabled_ports': None, 'total_ports': 5}
+        return {'enabled_ports': mask.bit_count(), 'total_ports': 5}

@@ -19,6 +19,10 @@ def configured_entities(data, mqtt=False):
         items = mqtt_entities()
     else:
         items = deepcopy(data.get(CONF_ENTITIES, DEFAULT_ENTITIES_CONFIG))
+    # Older entries persist their original entity list. Add only this new group
+    # control; never restore unrelated entities the user removed.
+    if not any(item.get('unique_id') == 'all_ports_charging' for item in items):
+        items.append(deepcopy(next(item for item in DEFAULT_ENTITIES_CONFIG if item['unique_id'] == 'all_ports_charging')))
     overrides = data.get('entity_overrides', {})
     return [deepcopy(overrides.get(f"{item['type']}:{item['unique_id']}", item)) for item in items]
 

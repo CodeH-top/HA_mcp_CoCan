@@ -506,6 +506,19 @@ DEFAULT_ENTITIES_CONFIG: list[dict] = [
         "icon": "mdi:sine-wave",
         "entity_category": "diagnostic",
     },
+    # Group output control uses one command for the five protocol port IDs.
+    {
+        "name": "All Ports",
+        "unique_id": "all_ports_charging",
+        "type": "switch",
+        "on_tool": "turn_on_port",
+        "on_args": {"ports": [1, 2, 3, 4, 5]},
+        "off_tool": "turn_off_port",
+        "off_args": {"ports": [1, 2, 3, 4, 5]},
+        "poll_tool": "get_charging_status",
+        "field": "status_bitmask",
+        "icon": "mdi:power-plug-battery",
+    },
     # ── Charging status switches (bitmask-based) ───────────────
     {
         "name": "Port A Charging",

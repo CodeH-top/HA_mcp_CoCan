@@ -594,6 +594,9 @@
       },
       "mqtt_device_power": {
         "name": "整机电源"
+      },
+      "all_ports_charging": {
+        "name": "全部端口"
       }
     },
     "select": {
