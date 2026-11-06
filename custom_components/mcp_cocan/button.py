@@ -34,7 +34,8 @@ class CocanBrokerToggle(McpDeviceEntity, ButtonEntity):
         super().__init__(coordinator, {'unique_id': 'broker_toggle', 'name': '切换官方 / HA MQTT',
                                      'type': 'button', 'icon': 'mdi:swap-horizontal', 'entity_category': 'config'})
         self._entry = entry
-        self._attr_name = None
+        # An explicit None suppresses HA platform translations as well.
+        del self._attr_name
         self._attr_translation_key = 'broker_toggle'
 
     @property

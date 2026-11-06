@@ -2,6 +2,8 @@
  * See bundled REFERENCES.md and licenses/ for sources and attribution.
  */
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const selectLabels = {"charging_strategy":{"fast":"自由流","slow":"均衡","usba_charging":"小家电","high_performance":"高性能","ultra_fast_single_port":"单口极速"},"temperature_mode":{"power_priority":"性能优先","temperature_priority":"温控优先"},"display_brightness":{"off":"关","low":"低","medium":"中","high":"高"},"display_mode":{"animation_priority":"待机动画优先","power_display_priority":"功率显示优先"},"idle_display":{"meteor":"流星","falling_petals":"落花","conways_game_of_life":"康威生命游戏","clock":"时钟"}};
+const temperatureLabels = {"cool":"偏凉","moderate":"适中","warm":"偏热"};
 // Presentation order only. Protocol/entity identity stays A=1, C1=2 … C4=5.
 const ports = [{index:2,label:'C1'},{index:3,label:'C2'},{index:4,label:'C3'},{index:5,label:'C4'},{index:1,label:'A'}];
 class CocanCard extends HTMLElement {
@@ -24,7 +26,14 @@ class CocanCard extends HTMLElement {
   }
   entity(key){const id=this._entry?.entities[key];return id?this._hass.states[id]:null;}
   valid(entity){return entity&&!['unknown','unavailable'].includes(entity.state);}
-  text(key){const state=this.entity(key);return this._entry?.available&&this.valid(state)?this._hass.formatEntityState(state):'—';}
+  formatState(key,state){
+    let text=String(this._hass.formatEntityState(state));
+    const labels=selectLabels[key]||(/_temp$/.test(key)?temperatureLabels:null);
+    if(text===state.state&&labels?.[state.state])text=labels[state.state];
+    const unit=state.attributes.unit_of_measurement;
+    return unit&&!text.trim().endsWith(unit)?`${text} ${unit}`:text;
+  }
+  text(key){const state=this.entity(key);return this._entry?.available&&this.valid(state)?this.formatState(key,state):'—';}
   number(key){const state=this.entity(key);return this._entry?.available&&this.valid(state)&&Number.isFinite(Number(state.state))?Number(state.state):null;}
   async command(domain,service,data,confirmation){
     if(this._busy||(confirmation&&!window.confirm(confirmation)))return;
@@ -57,7 +66,7 @@ class CocanCard extends HTMLElement {
   modes(disabled){
     const state=this.entity('charging_strategy');if(!state)return '';
     const icons={fast:'mdi:fan',slow:'mdi:speedometer-slow',usba_charging:'mdi:power-plug',high_performance:'mdi:lightning-bolt',ultra_fast_single_port:'mdi:flash'};
-    return `<section class="mode-section"><div class="section-heading"><strong>充电模式</strong><small>${this._entry.connection_mode==='mqtt'?'设备当前模式':'上次设置值'}</small></div><div class="mode-grid">${(state.attributes.options||[]).map(value=>`<button class="mode-choice" data-mode="${escapeHTML(value)}" aria-pressed="${state.state===value}" ${disabled||!this.valid(state)?'disabled':''}><ha-icon icon="${icons[value]||'mdi:lightning-bolt'}"></ha-icon><span>${escapeHTML(this._hass.formatEntityState({...state,state:value}))}</span><small>${state.state===value?'已选用':'切换模式'}</small></button>`).join('')}</div></section>`;
+    return `<section class="mode-section"><div class="section-heading"><strong>充电模式</strong><small>${this._entry.connection_mode==='mqtt'?'设备当前模式':'上次设置值'}</small></div><div class="mode-grid">${(state.attributes.options||[]).map(value=>`<button class="mode-choice" data-mode="${escapeHTML(value)}" aria-pressed="${state.state===value}" ${disabled||!this.valid(state)?'disabled':''}><ha-icon icon="${icons[value]||'mdi:lightning-bolt'}"></ha-icon><span>${escapeHTML(this.formatState('charging_strategy',{...state,state:value}))}</span><small>${state.state===value?'已选用':'切换模式'}</small></button>`).join('')}</div></section>`;
   }
   diagram(){
     const e=escapeHTML;
@@ -87,7 +96,7 @@ class CocanCard extends HTMLElement {
       ${this._entries.length>1?`<div class="row"><label for="device">设备</label><select id="device">${this._entries.map(x=>`<option value="${e(x.entry_id)}" ${x===entry?'selected':''}>${e(x.name)}</option>`).join('')}</select></div>`:''}
       ${!entry?'<p>请先添加小电拼集成，或在卡片配置中选择设备。</p>':`${this.overview()}${this.view==='power'?this.diagram():this.portList(disabled)}
       ${full?`${this.modes(disabled)}${entry.connection_mode==='mqtt'?`<div class="panel row"><span>整机电源：${e(this.text('mqtt_device_power'))}</span><button class="action" data-action="device-power" ${disabled?'disabled':''}>切换电源</button><button class="action" data-action="reboot" ${disabled?'disabled':''}>重启</button></div>`:''}
-      <div class="panel"><strong>充电与屏幕</strong>${['temperature_mode','display_brightness','display_mode','idle_display'].map(key=>{const state=this.entity(key);if(!state)return '';const title=state.attributes.friendly_name?.replace(entry.name+' ','')||key;return `<div class="row"><label for="${key}">${e(title)}</label><select id="${key}" data-select="${e(state.entity_id)}" ${disabled||!this.valid(state)?'disabled':''}><option value="" disabled ${!this.valid(state)?'selected':''}>未读取</option>${(state.attributes.options||[]).map(value=>`<option value="${e(value)}" ${state.state===value?'selected':''}>${e(this._hass.formatEntityState({...state,state:value}))}</option>`).join('')}</select></div>`;}).join('')}<small>${entry.connection_mode==='mqtt'?'充电策略由设备读取。':'充电策略为上次设置值。'}</small><div class="row"><span>整点报时</span><button class="action" data-action="chime" ${disabled||!this.valid(this.entity('hourly_chime'))?'disabled':''}>${this.entity('hourly_chime')?.state==='on'?'关闭报时':'开启报时'}</button></div></div>
+      <div class="panel"><strong>充电与屏幕</strong>${['temperature_mode','display_brightness','display_mode','idle_display'].map(key=>{const state=this.entity(key);if(!state)return '';const title=state.attributes.friendly_name?.replace(entry.name+' ','')||key;return `<div class="row"><label for="${key}">${e(title)}</label><select id="${key}" data-select="${e(state.entity_id)}" ${disabled||!this.valid(state)?'disabled':''}><option value="" disabled ${!this.valid(state)?'selected':''}>未读取</option>${(state.attributes.options||[]).map(value=>`<option value="${e(value)}" ${state.state===value?'selected':''}>${e(this.formatState(key,{...state,state:value}))}</option>`).join('')}</select></div>`;}).join('')}<small>${entry.connection_mode==='mqtt'?'充电策略由设备读取。':'充电策略为上次设置值。'}</small><div class="row"><span>整点报时</span><button class="action" data-action="chime" ${disabled||!this.valid(this.entity('hourly_chime'))?'disabled':''}>${this.entity('hourly_chime')?.state==='on'?'关闭报时':'开启报时'}</button></div></div>
       <div class="panel"><strong>临时功率分配</strong><p class="muted">合计不超过 160 W，应用后端口将重新握手。</p><div class="allocations">${ports.map(({index,label})=>`<label>${label}<input data-watts="${index-1}" aria-label="${label} 口分配瓦数" type="number" min="0" max="${index===1?60:140}" step="1" placeholder="W" ${disabled?'disabled':''}></label>`).join('')}</div><div class="row"><button class="action" data-action="allocate" ${disabled?'disabled':''}>应用全部端口分配</button></div></div>`:''}
       <div class="footer"><small>${entry.connection_mode==='mqtt'?'本地 MQTT':'官方 MCP'}${entry.last_sample?' · '+e(new Date(entry.last_sample*1000).toLocaleTimeString()):''}</small><div><button class="action" data-action="history">功率曲线</button> <button class="action" data-action="details">设备详情</button></div></div><div class="history"></div>`}
       ${this._error?`<p class="error" role="alert">${e(this._error)}</p>`:''}</div></ha-card>`;
@@ -98,7 +107,7 @@ class CocanCard extends HTMLElement {
     const entry=this._entry;
     this.shadowRoot.querySelectorAll('[data-chart]').forEach(button=>button.onclick=()=>{this._chart=button.dataset.chart;this.render();});
     this.shadowRoot.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{const state=this.entity('charging_strategy');if(!disabled&&this.valid(state)&&state.state!==button.dataset.mode)this.command('select','select_option',{entity_id:state.entity_id,option:button.dataset.mode},'切换充电模式可能导致端口重新握手，是否继续？');});
-    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b19'),dialogParams:{entry_id:entry?.entry_id}}}));
+    this.shadowRoot.querySelector('[data-action="settings"]').onclick=()=>this.dispatchEvent(new CustomEvent('show-dialog',{bubbles:true,composed:true,detail:{dialogTag:'cocan-settings-dialog',dialogImport:()=>import('/mcp_cocan/broker-settings.js?v=0.4.1b20'),dialogParams:{entry_id:entry?.entry_id}}}));
     this.shadowRoot.querySelector('[data-action="refresh"]').onclick=async()=>{if(entry){try{await this._hass.callWS({type:'mcp_cocan/refresh',entry_id:entry.entry_id});}catch{this._error='刷新失败，需管理员权限且设备在线。';}}await this.load();};
     this.shadowRoot.querySelector('#device')?.addEventListener('change',event=>{this._config.entry_id=event.target.value;this._history=null;this.render();});
     this.shadowRoot.querySelectorAll('[data-toggle-port]').forEach(button=>button.onclick=()=>{const index=Number(button.dataset.togglePort),state=this.entity(`port_${index}_charging`);if(!disabled&&this.valid(state)&&['on','off'].includes(state.state))this.command('switch',state.state==='on'?'turn_off':'turn_on',{entity_id:state.entity_id},state.state==='on'?`关闭 ${ports.find(p=>p.index===index).label} 口将中断该端口供电，是否继续？`:null);});
